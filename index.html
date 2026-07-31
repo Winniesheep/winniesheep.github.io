@@ -1,0 +1,1538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <title>Little Green's Growth Diary & Giant Visual Dashboard</title>
+  <link rel="stylesheet" href="plant.css">
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+</head>
+<body>
+
+  <header>
+    <button class="nav-btn active" onclick="switchPage('mode1')">📖 Plant Interactive Classroom</button>
+    <button class="nav-btn" onclick="switchPage('mode2')">🌡️ Giant Visual Dashboard</button>
+    <button class="nav-btn" onclick="switchPage('mode3')">📷 AI Visual Q&A</button>
+  </header>
+
+  <div class="container">
+    
+    <div id="mode1" class="page active">
+      <div class="progress-bar-container">
+        <div id="progress" class="progress-bar"></div>
+      </div>
+
+      <div class="story-layout">
+
+        <div class="dialogue-box">
+          <div>
+            <div class="speaker-name" style="color:var(--primary-green);">🌱 Little Green</div>
+            <div id="dialogue-text" class="dialogue-text">Loading...</div>
+          </div>
+          <div id="options-container" class="options-container"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="mode2" class="page">
+      
+      <div class="sensor-header">
+        <input type="text" id="api-url" value="" placeholder="Enter your Artec Logger API Link (e.g., https://www.artec-kk.co.jp/dev/pub/loggerbit/XXXX)">
+        <button id="sync-start-btn" onclick="startRealtimeSync()">🔄 Connect & Sync in Real Time</button>
+        <button id="sync-stop-btn" onclick="stopRealtimeSync()" style="background:#888;">⏹️ Stop Sync</button>
+        <div class="sync-status-panel" aria-live="polite">
+          <div id="source-status" class="status-pill"><strong>Data Source:</strong> Manual Test</div>
+          <div id="sync-status" class="status-pill"><strong>Sync Status:</strong> Not Connected</div>
+          <div id="last-updated" class="status-pill"><strong>Last Updated:</strong>--</div>
+        </div>
+      </div>
+
+      <div class="mock-panel">
+        <span style="font-size:1.1rem; font-weight:bold; color:var(--primary-green);">🧪 Offline Test Control Panel:</span>
+        
+        <div class="mock-group">
+          <label for="mock-temp">🌡️ Temperature (<span id="val-temp">25.0</span>°C):</label>
+          <input type="range" id="mock-temp" min="0" max="50" value="25" step="0.5" oninput="onMockChange()">
+        </div>
+
+        <div class="mock-group">
+          <label for="mock-hum">💧 Humidity (<span id="val-hum">60.0</span>%):</label>
+          <input type="range" id="mock-hum" min="0" max="100" step="0.1" value="60.0" oninput="onMockChange()">
+        </div>
+
+
+      </div>
+
+      <div class="dashboard-grid">
+        
+        <div class="thermometer-card">
+          <div class="speaker-name">🌡️ Environmental Thermometer</div>
+
+          <div class="thermo-svg-container">
+            <svg viewBox="0 0 160 380" width="100%" height="100%">
+              <g stroke="#C62828" stroke-width="1" opacity="0.95">
+                <line x1="28" y1="50" x2="52" y2="50" />
+                <text x="16" y="56" text-anchor="middle" font-size="14" fill="#D32F2F" font-weight="400">50</text>
+                <line x1="28" y1="90" x2="52" y2="90" />
+                <text x="16" y="96" text-anchor="middle" font-size="14" fill="#D32F2F" font-weight="400">40</text>
+                <line x1="28" y1="130" x2="52" y2="130" />
+                <text x="16" y="136" text-anchor="middle" font-size="14" fill="#D32F2F" font-weight="400">30</text>
+                <line x1="28" y1="170" x2="52" y2="170" />
+                <text x="16" y="176" text-anchor="middle" font-size="14" fill="#D32F2F" font-weight="400">20</text>
+                <line x1="28" y1="210" x2="52" y2="210" />
+                <text x="16" y="216" text-anchor="middle" font-size="14" fill="#D32F2F" font-weight="400">10</text>
+                <line x1="36" y1="250" x2="52" y2="250" />
+                <text x="16" y="256" text-anchor="middle" font-size="14" fill="#D32F2F" font-weight="400">0</text>
+              </g>
+
+              <rect x="55" y="30" width="36" height="240" rx="18" fill="rgba(255,255,255,0.9)" stroke="#FF8A80" stroke-width="4" />
+              <circle cx="73" cy="305" r="44" fill="rgba(255,255,255,0.9)" stroke="#FF8A80" stroke-width="4" />
+              <circle cx="73" cy="305" r="39" fill="#FF1744" />
+
+              <rect id="mercury-pillar" x="61" y="250" width="24" height="20" fill="#FF1744" style="transition: all 0.5s ease;" />
+
+              <text x="73" y="307" text-anchor="middle" dominant-baseline="middle" font-size="21" font-weight="900" fill="#FFFFFF" font-family="monospace">
+                <tspan id="display-temp">25.0</tspan>°C
+              </text>
+            </svg>
+          </div>
+
+          <div style="font-weight:bold; color:#D32F2F; font-size:1rem; margin-top:5px;">Monitoring in Real Time</div>
+        </div>
+
+        <div class="plant-center-card">
+          <div class="speaker-name">🌱 Little Green Assistant</div>
+          
+          <svg id="assistant-svg" class="plant-svg sway-anim" viewBox="0 0 160 180" style="width: 240px; height: 270px;">
+            <path d="M 45 135 L 52 170 L 108 170 L 115 135 Z" fill="#D27D2D" stroke="#8D6E63" stroke-width="3"/>
+            <ellipse cx="80" cy="135" rx="35" ry="7" fill="#A0522D" stroke="#8D6E63" stroke-width="3"/>
+
+            <path d="M 78 135 Q 77 110 80 90" stroke="#2E7D32" stroke-width="7" fill="none" stroke-linecap="round"/>
+
+            <g id="big-bush">
+              <circle cx="50" cy="100" r="28" fill="#388E3C" />
+              <circle cx="110" cy="100" r="28" fill="#388E3C" />
+              <circle cx="80" cy="70" r="35" fill="#2E7D32" />
+
+              <circle cx="42" cy="85" r="22" fill="#4CAF50" />
+              <circle cx="118" cy="85" r="22" fill="#4CAF50" />
+              <circle cx="60" cy="60" r="26" fill="#4CAF50" />
+              <circle cx="100" cy="60" r="26" fill="#4CAF50" />
+
+              <circle cx="80" cy="85" r="38" fill="#66BB6A" />
+            </g>
+
+            <g id="assistant-face">
+              <g id="eyes-normal">
+                <circle cx="68" cy="80" r="4.5" fill="#222" />
+                <circle cx="92" cy="80" r="4.5" fill="#222" />
+                <circle cx="69.5" cy="78.5" r="1.5" fill="#FFF" />
+                <circle cx="93.5" cy="78.5" r="1.5" fill="#FFF" />
+              </g>
+
+              <ellipse cx="60" cy="88" rx="6" ry="3" fill="#FF8A80" opacity="0.7" />
+              <ellipse cx="100" cy="88" rx="6" ry="3" fill="#FF8A80" opacity="0.7" />
+
+              <path id="assistant-mouth" d="M 68 92 Q 80 105 92 92 Z" fill="#FF5252" stroke="#222" stroke-width="2" />
+
+              <g id="sweat-drops" style="display:none;">
+                <path d="M 108 65 Q 112 72 108 77 Q 104 72 108 65" fill="#29B6F6" stroke="#0288D1" stroke-width="1" />
+                <path d="M 48 70 Q 52 77 48 82 Q 44 77 48 70" fill="#29B6F6" stroke="#0288D1" stroke-width="1" />
+              </g>
+
+              <g id="ice-effect" style="display:none;">
+                <polygon points="50,95 55,105 60,95" fill="#E0F7FA" stroke="#00ACC1" stroke-width="1" />
+                <polygon points="100,95 105,105 110,95" fill="#E0F7FA" stroke="#00ACC1" stroke-width="1" />
+              </g>
+            </g>
+          </svg>
+
+          <div id="assistant-response" class="dialogue-text" style="min-height: 50px; color: #1B5E20; font-weight: bold;">
+            Drag the test sliders above, or enter an API connection! 🌱
+          </div>
+
+          <div class="voice-control">
+            <button id="mic-btn" class="mic-btn" onclick="toggleVoiceRecognition()">🎤</button>
+            <span id="voice-status" style="font-size: 0.85rem; color: #555; font-weight: bold;">Click the button to talk to me</span>
+          </div>
+        </div>
+
+        <div class="humidity-card">
+          <div class="speaker-name">💧 Humidity Gauge</div>
+          
+          <div class="humidity-card-body">
+            <svg class="hydrometer-svg" viewBox="0 0 100 140">
+            <defs>
+              <clipPath id="water-drop-clip">
+                <path d="M 50 12 C 18 58 12 80 12 95 A 38 38 0 0 0 88 95 C 88 80 82 58 50 12 Z" />
+              </clipPath>
+            </defs>
+
+            <path d="M 50 12 C 18 58 12 80 12 95 A 38 38 0 0 0 88 95 C 88 80 82 58 50 12 Z" fill="#E1F5FE" stroke="#0288D1" stroke-width="4" />
+
+            <g clip-path="url(#water-drop-clip)">
+              <rect id="water-rect" x="0" y="133" width="100" height="140" fill="#29B6F6" style="transition: all 0.5s ease;" />
+            </g>
+
+            <path d="M 32 45 Q 22 68 22 90" stroke="white" stroke-width="3.5" fill="none" stroke-linecap="round" opacity="0.8" />
+
+            <text x="50" y="100" text-anchor="middle" font-size="22" font-weight="900" fill="#01579B" font-family="monospace">
+              <tspan id="display-hum">60</tspan>%
+            </text>
+          </svg>
+          </div>
+
+          <div style="font-weight:bold; color:#0288D1; font-size:1rem; margin-top:10px;">Monitoring in Real Time</div>
+        </div>
+
+      </div>
+
+      <section class="ai-chat-panel" aria-labelledby="ai-chat-title">
+        <h2 id="ai-chat-title">🤖 Little Green AI Chat Settings</h2>
+        <p class="ai-chat-intro">Paste the connection URL, then click "Connect Little Green AI" to test the server. API key is optional (required by some servers).</p>
+        <label class="ai-setting ai-key-field" for="ai-api-key">
+          API Key (Optional)
+          <div class="ai-key-row">
+            <input type="password" id="ai-api-key" placeholder="sk-... (if server requires)" autocomplete="off" oninput="handleAiKeyInput()">
+            <button class="ai-small-btn" id="ai-key-toggle-btn" type="button" onclick="toggleAiKeyVisibility()">Show</button>
+          </div>
+        </label>
+        <label class="ai-setting ai-key-field" for="ai-base-url">
+          Connection URL
+          <input type="text" id="ai-base-url" placeholder="https://.../v1/" autocomplete="off" oninput="handleAiEndpointInput()">
+        </label>
+        <div class="ai-key-actions">
+          <button id="ai-test-btn" type="button" onclick="testAiConnection()">🔌 Connect Little Green AI</button>
+          <button class="ai-secondary-btn" type="button" onclick="clearAiKey()">Clear API Key</button>
+        </div>
+        <div id="ai-chat-status" class="status-pill" aria-live="polite"><strong>AI Status:</strong> Not Tested</div>
+        <div id="ai-models-list" class="status-pill" style="display:none; grid-column: 1 / -1; text-align: left; padding: 10px 14px;"></div>
+      </section>
+    </div>
+
+    <div id="mode3" class="page">
+      <div class="ai-layout">
+        <div class="plant-center-card ai-plant-card">
+          <div class="speaker-name">🌱 Little Green Visual Assistant</div>
+
+          <svg id="ai-assistant-svg" class="plant-svg sway-anim" viewBox="0 0 160 180" style="width: 240px; height: 270px;">
+            <path d="M 45 135 L 52 170 L 108 170 L 115 135 Z" fill="#D27D2D" stroke="#8D6E63" stroke-width="3"/>
+            <ellipse cx="80" cy="135" rx="35" ry="7" fill="#A0522D" stroke="#8D6E63" stroke-width="3"/>
+            <path d="M 78 135 Q 77 110 80 90" stroke="#2E7D32" stroke-width="7" fill="none" stroke-linecap="round"/>
+            <g>
+              <circle cx="50" cy="100" r="28" fill="#388E3C" />
+              <circle cx="110" cy="100" r="28" fill="#388E3C" />
+              <circle cx="80" cy="70" r="35" fill="#2E7D32" />
+              <circle cx="42" cy="85" r="22" fill="#4CAF50" />
+              <circle cx="118" cy="85" r="22" fill="#4CAF50" />
+              <circle cx="60" cy="60" r="26" fill="#4CAF50" />
+              <circle cx="100" cy="60" r="26" fill="#4CAF50" />
+              <circle cx="80" cy="85" r="38" fill="#66BB6A" />
+            </g>
+            <g>
+              <circle cx="68" cy="80" r="4.5" fill="#222" />
+              <circle cx="92" cy="80" r="4.5" fill="#222" />
+              <circle cx="69.5" cy="78.5" r="1.5" fill="#FFF" />
+              <circle cx="93.5" cy="78.5" r="1.5" fill="#FFF" />
+              <ellipse cx="60" cy="88" rx="6" ry="3" fill="#FF8A80" opacity="0.7" />
+              <ellipse cx="100" cy="88" rx="6" ry="3" fill="#FF8A80" opacity="0.7" />
+              <path id="ai-assistant-mouth" d="M 68 92 Q 80 105 92 92 Z" fill="#FF5252" stroke="#222" stroke-width="2" />
+              <g id="ai-sweat-drops" style="display:none;">
+                <path d="M 108 65 Q 112 72 108 77 Q 104 72 108 65" fill="#29B6F6" stroke="#0288D1" stroke-width="1" />
+                <path d="M 48 70 Q 52 77 48 82 Q 44 77 48 70" fill="#29B6F6" stroke="#0288D1" stroke-width="1" />
+              </g>
+              <g id="ai-water-effect" style="display:none;">
+                <circle cx="48" cy="48" r="4" fill="#29B6F6" opacity="0.9" />
+                <circle cx="112" cy="50" r="4" fill="#29B6F6" opacity="0.9" />
+                <circle cx="80" cy="35" r="5" fill="#29B6F6" opacity="0.9" />
+              </g>
+            </g>
+          </svg>
+
+          <div id="ai-assistant-response" class="dialogue-text" style="min-height: 80px; color: #1B5E20; font-weight: bold;">
+            Paste a Teachable Machine link to load a model, then turn on the camera to show me images related to temperature or humidity!
+          </div>
+        </div>
+
+        <div class="vision-card">
+          <div class="speaker-name">📷 AI Visual Recognition Assistant</div>
+          <div class="vision-controls">
+            <label class="file-picker-label" for="tm-url-input">Teachable Machine Link:</label>
+            <input id="tm-url-input" type="text" placeholder="https://teachablemachine.app/model/?model=..." style="width:100%; padding:10px; border:2px solid #E0E0E0; border-radius:12px; font-size:0.95rem; margin-bottom:10px;">
+            <button id="tm-load-btn" onclick="loadTeachableMachineUrl()">📂 Load Model</button>
+            <button id="webcam-start-btn" onclick="startAiWebcam()" disabled>📷 Start Camera</button>
+            <button id="webcam-stop-btn" onclick="stopAiWebcam()" disabled style="background:#777;">⏹️ Stop Camera</button>
+          </div>
+
+          <div class="sync-status-panel" aria-live="polite">
+            <div id="model-status" class="status-pill"><strong>Model:</strong> Not Loaded</div>
+            <div id="camera-status" class="status-pill"><strong>Camera:</strong> Not Started</div>
+          </div>
+
+          <div class="webcam-frame">
+            <video id="ai-webcam" autoplay playsinline muted></video>
+            <span id="webcam-placeholder">After loading a model, you can start the camera</span>
+          </div>
+
+          <div class="prediction-grid">
+            <div class="prediction-card">Current Recognition<strong id="prediction-class">--</strong></div>
+            <div class="prediction-card">Confidence Score<strong id="prediction-score">--</strong></div>
+            <div class="prediction-card">Model Classes<strong id="model-classes">--</strong></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    function switchPage(pageId) {
+      document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+      
+      document.getElementById(pageId).classList.add('active');
+      if(pageId === 'mode1') document.querySelectorAll('.nav-btn')[0].classList.add('active');
+      if(pageId === 'mode2') document.querySelectorAll('.nav-btn')[1].classList.add('active');
+      if(pageId === 'mode3') document.querySelectorAll('.nav-btn')[2].classList.add('active');
+    }
+
+    const storyScript = [
+      { chapter: 1, text: "Hello~ I'm Little Green! Nice to meet you! 😊 Do you want to know how I grow?", options: [{ label: "Of course! Tell me!", next: 1 }, { label: "Tell me about yourself first?", next: 1 }] },
+      { chapter: 2, text: "First question~ Do you know what I need most to grow?", options: [{ label: "Sunlight ☀️", correct: true, feedback: "Correct! ☀️ I need sunlight for photosynthesis to make nutrients and grow!" }, { label: "Moonlight 🌙", correct: false, feedback: "Oops, the correct answer is sunlight~ Moonlight doesn't have enough energy for photosynthesis!" }, { label: "Lamp Light 💡", correct: false, feedback: "Oops, the correct answer is sunlight~ Lamp light doesn't have enough energy for healthy growth!" }] },
+      { chapter: 3, text: "Next question~ If I don't get water for several days, what will happen?", options: [{ label: "I'll keep growing", correct: false, feedback: "Not quite! Without water, I'll wither and droop! Water helps transport nutrients, very important!" }, { label: "I'll wither and droop", correct: true, feedback: "That's right! Water is the source of my life~ Without water, I'll become sad and droopy! 💧" }, { label: "I'll bloom", correct: false, feedback: "Not quite! Without water, I'll wither and droop! Water helps transport nutrients, very important!" }] },
+      { chapter: 4, text: "Third question~ My roots are in the soil. Besides holding me, what else does soil do?", options: [{ label: "Provide nutrients and minerals", correct: true, feedback: "So smart! Soil has nitrogen, phosphorus, potassium and other nutrients I need to grow! 🌱" }, { label: "Let me sleep", correct: false, feedback: "The correct answer is providing nutrients and minerals~ My roots absorb various nutrients from the soil to grow!" }, { label: "Keep warm", correct: false, feedback: "The correct answer is providing nutrients and minerals~ My roots absorb various nutrients from the soil to grow!" }] },
+      { chapter: 5, text: "Fourth question~ I breathe too! Do you know what gas I mainly breathe?", options: [{ label: "Oxygen", correct: false, feedback: "Actually, I mainly absorb carbon dioxide during the day for photosynthesis, and release oxygen for humans~ Pretty amazing, right?" }, { label: "Carbon Dioxide", correct: true, feedback: "Awesome! During photosynthesis I absorb carbon dioxide, and at night I absorb oxygen~ Air is very important to me too!" }, { label: "Nitrogen", correct: false, feedback: "Actually, I mainly absorb carbon dioxide during the day for photosynthesis, and release oxygen for humans~ Pretty amazing, right?" }] },
+      { chapter: 6, text: "Last question! Which environment is best for me to grow?", options: [{ label: "Freezing snowfield", correct: false, isFinal: true }, { label: "Warm and humid place", correct: true, isFinal: true }, { label: "Scorching desert", correct: false, isFinal: true }] }
+    ];
+
+    let currentStep = 0, correctCount = 0, plantStage = 0;
+    function renderStory() {
+      const currentData = storyScript[currentStep];
+      document.getElementById('dialogue-text').innerText = currentData.text;
+      const optionsContainer = document.getElementById('options-container');
+      optionsContainer.innerHTML = '';
+      document.getElementById('progress').style.width = `${Math.min(100, (currentStep / 5) * 100)}%`;
+
+      for (let i = 0; i <= 5; i++) {
+        const el = document.getElementById(`stage-${i}`);
+        if (el) el.classList.toggle('hidden-stage', i !== plantStage);
+      }
+
+      currentData.options.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = 'option-btn';
+        btn.innerText = opt.label;
+        btn.onclick = () => {
+          if (opt.feedback) {
+            if (opt.correct) { correctCount++; plantStage = Math.min(plantStage + 1, 5); }
+            currentStep++;
+            renderStory();
+            document.getElementById('dialogue-text').innerText = opt.feedback;
+            optionsContainer.innerHTML = '';
+            const nextBtn = document.createElement('button');
+            nextBtn.className = 'option-btn'; nextBtn.innerText = 'Next Question ➔';
+            nextBtn.onclick = () => { renderStory(); };
+            optionsContainer.appendChild(nextBtn);
+          } else if (opt.isFinal) {
+            optionsContainer.style.display = 'none';
+            if (correctCount >= 5) {
+              document.getElementById('dialogue-text').innerText = "🌸 Congratulations! You got everything right! You're now a Plant Expert! Thank you for helping me grow~ Remember to take good care of plants around you!";
+            } else {
+              document.getElementById('dialogue-text').innerText = "🌺 Great job! You've learned a lot about plants~ Remember plants need: sunlight, water, soil, air, and proper temperature to grow healthy!";
+            }
+          } else {
+            currentStep = opt.next; renderStory();
+          }
+        };
+        optionsContainer.appendChild(btn);
+      });
+    }
+    renderStory();
+
+    const SENSOR_LIMITS = {
+      temp: { min: 0, max: 50 },
+      hum: { min: 0, max: 100 }
+    };
+    let sensorData = { temp: 25.0, hum: 60 };
+    let pollInterval = null;
+    let activeLoggerUrl = '';
+    let latestAssistantMood = 'The environment is so comfortable, perfect for growing! 😊';
+
+    function clampNumber(value, min, max) {
+      return Math.min(max, Math.max(min, value));
+    }
+
+    function isValidNumber(value) {
+      return typeof value === 'number' && Number.isFinite(value);
+    }
+
+    function formatTime(date = new Date()) {
+      return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+    }
+
+    function setStatus(elementId, message, tone = '') {
+      const el = document.getElementById(elementId);
+      if (!el) return;
+      el.innerHTML = message;
+      el.classList.remove('error', 'warn');
+      if (tone) el.classList.add(tone);
+    }
+
+    function setSourceStatus(source) {
+      setStatus('source-status', `<strong>Data Source:</strong> ${source}`);
+    }
+
+    function setSyncStatus(message, tone = '') {
+      setStatus('sync-status', `<strong>Sync Status:</strong> ${message}`, tone);
+    }
+
+    function setLastUpdated(message) {
+      setStatus('last-updated', `<strong>Last Updated:</strong> ${message}`);
+    }
+
+    function setVoiceStatus(message) {
+      const el = document.getElementById('voice-status');
+      if (el) el.innerText = message;
+    }
+
+    const AI_KEY_STORAGE_KEY = 'xiaolu-ai-api-key';
+    const AI_ENDPOINT_STORAGE_KEY = 'xiaolu-ai-endpoint';
+    const AI_MODEL_STORAGE_KEY = 'xiaolu-ai-model';
+    let aiChatBusy = false;
+
+    function setAiChatStatus(message, tone = '') {
+      setStatus('ai-chat-status', `<strong>AI Status:</strong> ${message}`, tone);
+    }
+
+    function getAiApiKey() {
+      return document.getElementById('ai-api-key').value.trim();
+    }
+
+    function getAiEndpoint() {
+      return document.getElementById('ai-base-url').value.trim();
+    }
+
+    function getSelectedAiModel() {
+      return localStorage.getItem(AI_MODEL_STORAGE_KEY) || '';
+    }
+
+    function setSelectedAiModel(modelId) {
+      if (modelId) {
+        localStorage.setItem(AI_MODEL_STORAGE_KEY, modelId);
+      } else {
+        localStorage.removeItem(AI_MODEL_STORAGE_KEY);
+      }
+    }
+
+    function getAiSettings() {
+      return {
+        apiKey: getAiApiKey(),
+        baseUrl: normalizeAiEndpoint(getAiEndpoint()),
+        model: getSelectedAiModel()
+      };
+    }
+
+    function validateAiSettings(RequireApiKey = false) {
+      const settings = getAiSettings();
+      if (RequireApiKey && !settings.apiKey) {
+        throw new Error('Please paste the API key first');
+      }
+      if (!settings.baseUrl || !/^https?:\/\//i.test(settings.baseUrl)) {
+        throw new Error('Please paste a valid connection URL');
+      }
+      return settings;
+    }
+
+    function normalizeAiEndpoint(endpoint) {
+      return endpoint.replace(/\/+$/, '');
+    }
+
+    function handleAiKeyInput() {
+      const key = getAiApiKey();
+      if (key) {
+        localStorage.setItem(AI_KEY_STORAGE_KEY, key);
+        setAiChatStatus('API key filled in, please check the connection URL and test');
+      } else {
+        localStorage.removeItem(AI_KEY_STORAGE_KEY);
+        setAiChatStatus('API key cleared (optional)');
+      }
+    }
+
+    function handleAiEndpointInput() {
+      const endpoint = getAiEndpoint();
+      if (endpoint) {
+        localStorage.setItem(AI_ENDPOINT_STORAGE_KEY, endpoint);
+        setAiChatStatus('Connection URL filled in, please click connect to test');
+      } else {
+        localStorage.removeItem(AI_ENDPOINT_STORAGE_KEY);
+        setAiChatStatus('Connection URL not entered yet', 'warn');
+      }
+    }
+
+    function loadSavedAiSettings() {
+      const keyInput = document.getElementById('ai-api-key');
+      const endpointInput = document.getElementById('ai-base-url');
+      if (!keyInput || !endpointInput) return;
+      const savedKey = localStorage.getItem(AI_KEY_STORAGE_KEY);
+      const savedEndpoint = localStorage.getItem(AI_ENDPOINT_STORAGE_KEY);
+      if (savedKey) {
+        keyInput.value = savedKey;
+      }
+      if (savedEndpoint) endpointInput.value = savedEndpoint;
+      if (savedKey && savedEndpoint) setAiChatStatus('Loaded saved settings, please click connect to test');
+    }
+
+    function toggleAiKeyVisibility() {
+      const keyInput = document.getElementById('ai-api-key');
+      const toggleButton = document.getElementById('ai-key-toggle-btn');
+      if (!keyInput || !toggleButton) return;
+      const shouldShow = keyInput.type === 'password';
+      keyInput.type = shouldShow ? 'text' : 'password';
+      toggleButton.innerText = shouldShow ? 'Hide' : 'Show';
+    }
+
+    function clearAiKey() {
+      const keyInput = document.getElementById('ai-api-key');
+      if (keyInput) keyInput.value = '';
+      localStorage.removeItem(AI_KEY_STORAGE_KEY);
+      setAiChatStatus('API key cleared', 'warn');
+    }
+
+    function buildAiMessages(message, sensor, audioBase64, audioFormat) {
+      const systemContent = 'You are Little Green, a friendly and lively plant learning assistant suitable for primary school students. Please answer in English with a warm tone. Keep answers short, clear, complete, and encourage students to observe data. Too hot >28 degrees , too low <18 degrees, too dry <40% humidity, too wet >80% humidity. If the environment is not suitable for plant growth, please give a short warning and advice.';
+      const sensorContext = `\nCurrent environment data: Temperature ${sensor.temp.toFixed(1)} degrees, Humidity ${Math.round(sensor.hum)}%. Please answer combining plant growth and photosynthesis knowledge.`;
+
+      if (audioBase64) {
+        return [
+          { role: 'system', content: systemContent },
+          {
+            role: 'user',
+            content: [
+              { type: 'input_audio', input_audio: { data: audioBase64, format: audioFormat } },
+              { type: 'text', text:  sensorContext + 'Please listen to this audio and answer the student\'s question.' }
+            ]
+          }
+        ];
+      }
+
+      return [
+        { role: 'system', content: systemContent },
+        {
+          role: 'user',
+          content: `Student question: ${message}${sensorContext}`
+        }
+      ];
+    }
+
+    function canUseLocalAiProxy() {
+      // Only use local proxy if page is on localhost AND no external endpoint is configured
+      const savedEndpoint = localStorage.getItem(AI_ENDPOINT_STORAGE_KEY);
+      if (savedEndpoint && /^https?:\/\//i.test(savedEndpoint)) {
+        const endpointHost = (() => { try { return new URL(savedEndpoint).hostname; } catch { return ''; } })();
+        if (endpointHost && !['127.0.0.1', 'localhost'].includes(endpointHost)) {
+          console.log('[Little Green] Using external API endpoint:', savedEndpoint);
+          return false;
+        }
+      }
+      return location.protocol === 'http:' && ['127.0.0.1', 'localhost'].includes(location.hostname);
+    }
+
+    function blobToBase64(blob) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64 = reader.result.split(',')[1];
+          resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    }
+
+    function detectAudioFormat(mimeType) {
+      // API accepts 'wav', 'mp3', 'flac', 'mp4' (AAC only, NOT Opus) formats for input_audio
+      // Browser MediaRecorder produces Opus which API rejects
+      // Web Audio API records as WAV (PCM) which API accepts
+      if (mimeType && mimeType.includes('wav')) {
+        return 'wav';
+      }
+      if (mimeType && mimeType.includes('mp3')) {
+        return 'mp3';
+      }
+      if (mimeType && mimeType.includes('flac')) {
+        return 'flac';
+      }
+      if (mimeType && (mimeType.includes('mp4') || mimeType.includes('m4a'))) {
+        return 'mp4';
+      }
+      console.warn('[Little Green] Warning: unknown audio format', mimeType, 'attempting to use wav');
+      return 'wav';
+    }
+
+    async function callAiChat(settings, messageOrAudio, sensor) {
+      let response;
+      try {
+        const useLocalProxy = canUseLocalAiProxy();
+        const endpoint = useLocalProxy ? '/api/chat' : `${settings.baseUrl}/chat/completions`;
+        const headers = { 'Content-Type': 'application/json' };
+        if (!useLocalProxy && settings.apiKey) {
+          headers['Authorization'] = `Bearer ${settings.apiKey}`;
+        }
+
+        let body;
+        if (messageOrAudio instanceof Blob) {
+          const base64Audio = await blobToBase64(messageOrAudio);
+          const audioFormat = detectAudioFormat(messageOrAudio.type);
+          body = {
+            model: settings.model,
+            messages: buildAiMessages(null, sensor, base64Audio, audioFormat),
+            temperature: 0.7,
+            max_tokens: 2048,
+            reasoning_effort: "none",
+            chat_template_kwargs: { "enable_thinking": false }
+          };
+        } else {
+          body = useLocalProxy
+            ? { ...settings, message: messageOrAudio, sensor }
+            : {
+                model: settings.model,
+                messages: buildAiMessages(messageOrAudio, sensor),
+                temperature: 0.7,
+                max_tokens: 2048,
+                reasoning_effort: "none",
+                chat_template_kwargs: { "enable_thinking": false }
+              };
+        }
+
+        console.log('[Little Green] Sending request to:', endpoint);
+        console.log('[Little Green] Request body (first 300 chars):', JSON.stringify(body).substring(0, 300));
+        
+        response = await fetch(endpoint, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(body)
+        });
+      } catch (error) {
+        throw new Error('Could not connect to AI. Please open the page with a local server URL to avoid browser CORS restrictions');
+      }
+      let result;
+      let rawText = '';
+      try {
+        rawText = await response.text();
+      } catch (e) {
+        throw new Error('Could not read AI service response');
+      }
+      console.log('[Little Green] API response status:', response.status);
+      console.log('[Little Green] API raw response:', rawText);
+      
+      try {
+        result = JSON.parse(rawText);
+      } catch (e) {
+        // Response is not valid JSON - could be CORS issue or server error
+        const preview = rawText.substring(0, 200).replace(/\n/g, ' ').replace(/</g, '\u003c').replace(/>/g, '\u003e');
+        throw new Error(`AI service returned unreadable data (${response.status}). Raw response: ${preview}`);
+      }
+      if (!response.ok || result.ok === false) {
+        const apiMessage = result.error?.message || result.message || `AI service error (${response.status})`;
+        throw new Error(apiMessage);
+      }
+      const reply = result.reply || result.choices?.[0]?.message?.content?.trim();
+      if (!reply) throw new Error('AI has no reply content at the moment');
+      return { reply, model: result.model || settings.model };
+    }
+
+    async function testAiConnection() {
+      let settings;
+      try {
+        settings = validateAiSettings(false);
+      } catch (error) {
+        setAiChatStatus(error.message, 'warn');
+        return;
+      }
+
+      const testButton = document.getElementById('ai-test-btn');
+      const modelsListEl = document.getElementById('ai-models-list');
+      testButton.disabled = true;
+      if (modelsListEl) modelsListEl.style.display = 'none';
+      setAiChatStatus('Testing connection...');
+
+      try {
+        const modelsUrl = `${settings.baseUrl}/models`;
+        const headers = { 'Content-Type': 'application/json' };
+        if (settings.apiKey) {
+          headers['Authorization'] = `Bearer ${settings.apiKey}`;
+        }
+
+        const response = await fetch(modelsUrl, { method: 'GET', headers });
+
+        if (!response.ok) {
+          let errorMsg = `Server returned error (${response.status})`;
+          try {
+            const errBody = await response.json();
+            errorMsg = errBody.error?.message || errBody.message || errorMsg;
+          } catch {
+            const textBody = await response.text().catch(() => '');
+            if (textBody) errorMsg = textBody.substring(0, 200);
+          }
+          throw new Error(errorMsg);
+        }
+
+        let result;
+        try {
+          result = await response.json();
+        } catch {
+          throw new Error('AI service returned unreadable data');
+        }
+
+        // Some servers put capabilities in the top-level "models" array
+        // and metadata in "data" — build a lookup so we can merge both.
+        const modelsLookup = new Map();
+        const topModels = Array.isArray(result.models) ? result.models : [];
+        topModels.forEach(m => {
+          const key = m.id || m.name || m;
+          modelsLookup.set(key, { capabilities: Array.isArray(m.capabilities) ? m.capabilities : [] });
+        });
+
+        const models = Array.isArray(result.data) ? result.data : [];
+        if (models.length === 0 && topModels.length === 0) {
+          throw new Error('AI service returned unreadable data');
+        }
+
+        // Use data array if available, otherwise fall back to top-level models
+        const modelList = models.length > 0 ? models : topModels;
+        setAiChatStatus(`Connection successful! Found ${modelList.length} models`, '');
+
+        if (modelList.length > 0 && modelsListEl) {
+          const VOICE_KEYWORDS = ['audio', 'whisper', 'realtime', 'tts', 'speech', 'voice', 'multimodal', 'gpt-4o', 'gpt-4-turbo', 'gpt-4o-mini', 'gpt-4o-audio'];
+          const selectedModel = getSelectedAiModel();
+          let html = '<div style="font-weight:800; margin-bottom:6px;">Available Models:</div>';
+          modelList.forEach(m => {
+            const id = m.id || m.name || m;
+            const name = typeof id === 'string' ? id : JSON.stringify(id);
+            // Merge capabilities from both the data item and the top-level models entry
+            const ownCaps = Array.isArray(m.capabilities) ? m.capabilities : [];
+            const lookupCaps = modelsLookup.has(name) ? modelsLookup.get(name).capabilities : [];
+            const allCaps = [...new Set([...ownCaps, ...lookupCaps].map(c => String(c).toLowerCase()))];
+            const isVoiceCapable = VOICE_KEYWORDS.some(kw => name.toLowerCase().includes(kw)) || allCaps.some(c => VOICE_KEYWORDS.some(kw => c.includes(kw)));
+            const voiceBadge = isVoiceCapable ? ' <span style="color:#5E35B1;">🎙️ Voice Capable</span>' : '';
+            const isChecked = name === selectedModel ? 'checked' : '';
+            html += `<div style="margin:3px 0; font-size:0.95rem;"><input type="radio" name="ai-model-select" value="${name}" ${isChecked} onchange="setSelectedAiModel(this.value); setAiChatStatus('Model selected: ${name}', '');"> ${name}${voiceBadge}</div>`;
+          });
+          modelsListEl.innerHTML = html;
+          modelsListEl.style.display = 'block';
+        }
+
+      } catch (error) {
+        setAiChatStatus(error.message, 'error');
+      } finally {
+        testButton.disabled = false;
+      }
+    }
+
+    loadSavedAiSettings();
+
+    function normalizeSensorData(temp, hum) {
+      const next = {};
+      if (isValidNumber(temp)) next.temp = clampNumber(temp, SENSOR_LIMITS.temp.min, SENSOR_LIMITS.temp.max);
+      if (isValidNumber(hum)) next.hum = clampNumber(hum, SENSOR_LIMITS.hum.min, SENSOR_LIMITS.hum.max);
+      return next;
+    }
+
+    function applySensorData(nextData, sourceLabel) {
+      if (isValidNumber(nextData.temp)) sensorData.temp = nextData.temp;
+      if (isValidNumber(nextData.hum)) sensorData.hum = nextData.hum;
+
+      document.getElementById('mock-temp').value = sensorData.temp;
+      document.getElementById('mock-hum').value = sensorData.hum;
+      document.getElementById('val-temp').innerText = sensorData.temp.toFixed(1);
+      document.getElementById('val-hum').innerText = sensorData.hum.toFixed(1);
+      setSourceStatus(sourceLabel);
+      setLastUpdated(formatTime());
+      updateVisualUI();
+      if (typeof updateLessonSensorChallenge === 'function') updateLessonSensorChallenge();
+    }
+
+    function onMockChange() {
+      if (pollInterval) stopRealtimeSync('manual');
+
+      const mTemp = parseFloat(document.getElementById('mock-temp').value);
+      const mHum = parseFloat(document.getElementById('mock-hum').value);
+      applySensorData(normalizeSensorData(mTemp, mHum), 'Manual Test');
+      setSyncStatus('Manual Mode');
+    }
+
+    function normalizeLoggerUrl(loggerUrl) {
+      let url = loggerUrl.trim();
+      if (!url.startsWith('http://') && !url.startsWith('https://')) url = 'http://' + url;
+      return url;
+    }
+
+    function startRealtimeSync() {
+      const loggerUrl = document.getElementById('api-url').value.trim();
+      if (!loggerUrl) {
+        setSyncStatus('Please enter API Link first', 'warn');
+        setVoiceStatus('Please enter your Artec Logger API Link first!');
+        document.getElementById('api-url').focus();
+        return;
+      }
+
+      activeLoggerUrl = normalizeLoggerUrl(loggerUrl);
+      if (pollInterval) clearInterval(pollInterval);
+
+      setSourceStatus('API Real-time Sync');
+      setSyncStatus('Connecting...');
+      setVoiceStatus('🔄 Connecting to real-time sync...');
+      fetchArtecData(activeLoggerUrl);
+      pollInterval = setInterval(() => fetchArtecData(activeLoggerUrl), 2000);
+    }
+
+    function stopRealtimeSync(reason = 'user') {
+      if (pollInterval) clearInterval(pollInterval);
+      pollInterval = null;
+      activeLoggerUrl = '';
+      setSourceStatus('Manual Test');
+      setSyncStatus(reason === 'manual' ? 'Switched to manual mode' : 'Sync stopped');
+      setVoiceStatus(reason === 'manual' ? '⏹️ Sync stopped, now in manual mode' : '⏹️ Sync stopped');
+    }
+
+    function parseArtecData(responseData) {
+      if (!responseData || !Array.isArray(responseData.data)) {
+        throw new Error('Incorrect data format: cannot find data array');
+      }
+
+      const tempItem = responseData.data.find(i => i && i.unit && (i.unit.includes('溫') || i.unit.toLowerCase().includes('temp')));
+      const humItem = responseData.data.find(i => i && i.unit && (i.unit.includes('濕') || i.unit.toLowerCase().includes('hum')));
+      const warnings = [];
+      let temp;
+      let hum;
+
+      if (!tempItem) {
+        warnings.push('Missing temperature data');
+      } else {
+        temp = parseFloat(tempItem.value);
+        if (!Number.isFinite(temp)) warnings.push('Temperature value is incorrect');
+      }
+
+      if (!humItem) {
+        warnings.push('Missing humidity data');
+      } else {
+        hum = parseFloat(humItem.value);
+        if (!Number.isFinite(hum)) warnings.push('Humidity value is incorrect');
+      }
+
+      const normalized = normalizeSensorData(temp, hum);
+      if (!isValidNumber(normalized.temp) && !isValidNumber(normalized.hum)) {
+        throw new Error(warnings.join(', ') || 'No available temperature/humidity data');
+      }
+
+      return { data: normalized, warnings };
+    }
+
+    function describeFetchError(error) {
+      if (error instanceof SyntaxError) return 'JSON format error, please confirm API returns JSON';
+      if (error.message && error.message.startsWith('HTTP')) return error.message;
+      if (error.message && error.message.includes('Failed to fetch')) return 'Network or CORS error, please confirm API allows browser access';
+      return error.message || 'Fetch failed, please confirm API Link is correct';
+    }
+
+    async function fetchArtecData(loggerUrl) {
+      try {
+        const response = await fetch(loggerUrl, { cache: 'no-store' });
+        if (!response.ok) throw new Error(`HTTP error ${response.status}`);
+
+        const responseData = await response.json();
+        const result = parseArtecData(responseData);
+        applySensorData(result.data, 'API Real-time Sync');
+
+        if (result.warnings.length) {
+          setSyncStatus(`Sync successful, but ${result.warnings.join(', ')}`, 'warn');
+          setVoiceStatus(`⚠️ Available data updated, but ${result.warnings.join(', ')}`);
+        } else {
+          setSyncStatus('Sync successful');
+          setVoiceStatus('✅ API real-time sync normal');
+        }
+      } catch (error) {
+        console.error('API fetch failed:', error);
+        setSyncStatus(describeFetchError(error), 'error');
+        setVoiceStatus('❌ Fetch failed, keeping previous available data');
+      }
+    }
+
+    function updateVisualUI() {
+      const temp = sensorData.temp;
+      const hum = sensorData.hum;
+
+      document.getElementById('display-temp').textContent = isValidNumber(temp) ? temp.toFixed(1) : '--.-';
+      document.getElementById('display-hum').textContent = isValidNumber(hum) ? hum.toFixed(1) : '--';
+
+      if (isValidNumber(temp)) {
+        const clampedTemp = clampNumber(temp, SENSOR_LIMITS.temp.min, SENSOR_LIMITS.temp.max);
+        const targetY = 250 - (clampedTemp / 50) * 200;
+        const height = 270 - targetY;
+
+        const mercuryPillar = document.getElementById('mercury-pillar');
+        mercuryPillar.setAttribute('y', targetY);
+        mercuryPillar.setAttribute('height', height);
+      }
+
+      if (isValidNumber(hum)) {
+        const clampedHum = clampNumber(hum, SENSOR_LIMITS.hum.min, SENSOR_LIMITS.hum.max);
+        const waterY = 133 - (clampedHum / 100) * 121;
+        const waterRect = document.getElementById('water-rect');
+        waterRect.setAttribute('y', waterY);
+      }
+
+      const plantSvg = document.getElementById('assistant-svg');
+      const mouth = document.getElementById('assistant-mouth');
+      const sweat = document.getElementById('sweat-drops');
+      const ice = document.getElementById('ice-effect');
+      const responseText = document.getElementById('assistant-response');
+
+      if (isValidNumber(temp)) {
+        if (temp > 28) {
+          document.documentElement.style.setProperty('--env-theme-bg', '#FFCC80');
+          plantSvg.className = 'plant-svg sweat-anim';
+          sweat.style.display = 'block';
+          ice.style.display = 'none';
+          mouth.setAttribute('d', 'M 65 90 Q 80 115 95 90 Z');
+          latestAssistantMood = 'So hot! Please help me shade from the sun! 🥵';
+          // Only show default mood if AI hasn't been used
+          if (!hasUsedAi) responseText.innerText = latestAssistantMood;
+        } else if (temp < 18) {
+          document.documentElement.style.setProperty('--env-theme-bg', '#81D4FA');
+          plantSvg.className = 'plant-svg shiver-anim';
+          sweat.style.display = 'none';
+          ice.style.display = 'block';
+          mouth.setAttribute('d', 'M 68 96 Q 80 92 92 96');
+          latestAssistantMood = "So cold, I'm shivering! 🥶";
+          // Only show default mood if AI hasn't been used
+          if (!hasUsedAi) responseText.innerText = latestAssistantMood;
+        } else {
+          document.documentElement.style.setProperty('--env-theme-bg', '#A5D6A7');
+          plantSvg.className = 'plant-svg sway-anim';
+          sweat.style.display = 'none';
+          ice.style.display = 'none';
+          mouth.setAttribute('d', 'M 68 92 Q 80 105 92 92 Z');
+          latestAssistantMood = 'The environment is so comfortable, perfect for growing! 😊';
+          // Only show default mood if AI hasn't been used
+          if (!hasUsedAi) responseText.innerText = latestAssistantMood;
+        }
+      }
+    }
+
+    let hasUsedAi = false;
+    let isListening = false, audioContext = null, audioStream = null, audioWorkletNode = null, recordingProcessor = null;
+    const micButton = document.getElementById('mic-btn');
+    let pcmBuffers = [];
+
+    updateVisualUI();
+    setLastUpdated('--');
+
+    // WAV encoder - convert PCM float32 samples to WAV (16-bit PCM) Blob
+    function encodeWAV(samples, sampleRate) {
+      const numChannels = 1;
+      const bitsPerSample = 16;
+      const byteRate = sampleRate * numChannels * (bitsPerSample / 8);
+      const blockAlign = numChannels * (bitsPerSample / 8);
+      const dataLength = samples.length * 2;
+      const buffer = new ArrayBuffer(44 + dataLength);
+      const view = new DataView(buffer);
+      // RIFF header
+      view.setUint32(0, 0x52494646, false); // 'RIFF'
+      view.setUint32(4, 36 + dataLength, true);
+      view.setUint32(8, 0x57415645, false); // 'WAVE'
+      // fmt chunk
+      view.setUint32(12, 0x666D7420, false); // 'fmt '
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true);
+      view.setUint16(22, numChannels, true);
+      view.setUint32(24, sampleRate, true);
+      view.setUint32(28, byteRate, true);
+      view.setUint16(32, blockAlign, true);
+      view.setUint16(34, bitsPerSample, true);
+      // data chunk
+      view.setUint32(36, 0x64617461, false); // 'data'
+      view.setUint32(40, dataLength, true);
+      // Write PCM samples (float -> int16)
+      let offset = 44;
+      for (let i = 0; i < samples.length; i++) {
+        const s = Math.max(-1, Math.min(1, samples[i]));
+        view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+        offset += 2;
+      }
+      return new Blob([buffer], { type: 'audio/wav' });
+    }
+
+    async function initAudioRecording() {
+      try {
+        audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+        const source = audioContext.createMediaStreamSource(audioStream);
+        // Use ScriptProcessorNode for WAV PCM recording
+        const bufferSize = 4096;
+        const processor = audioContext.createScriptProcessor(bufferSize, 1, 1);
+        processor.onaudioprocess = (e) => {
+          const inputData = e.inputBuffer.getChannelData(0);
+          pcmBuffers.push(new Float32Array(inputData));
+        };
+        processor.connect(audioContext.destination);
+        source.connect(processor);
+        recordingProcessor = processor;
+        console.log('[Little Green] Web Audio API WAV recording initialized, sampleRate:', audioContext.sampleRate);
+      } catch (err) {
+        micButton.disabled = true;
+        micButton.title = 'Microphone permission not granted';
+        setVoiceStatus('Microphone permission not granted, please allow microphone use in your browser');
+      }
+    }
+
+    async function toggleVoiceRecognition() {
+      if (aiChatBusy) {
+        setVoiceStatus('🤔 Little Green is still thinking, please wait...');
+        return;
+      }
+      if (!audioContext && !audioStream) {
+        await initAudioRecording();
+      }
+      if (!audioContext) {
+        setVoiceStatus('Microphone permission not granted, please allow microphone use in your browser');
+        return;
+      }
+      if (isListening) {
+        // Stop recording - encode PCM to WAV
+        isListening = false;
+        micButton.classList.remove('listening');
+        
+        // Disconnect and stop
+        if (audioStream) {
+          audioStream.getTracks().forEach(track => track.stop());
+          audioStream = null;
+        }
+        if (audioContext) {
+          audioContext.close();
+          audioContext = null;
+        }
+        recordingProcessor = null;
+        
+        // Combine all PCM buffers and encode as WAV
+        if (pcmBuffers.length > 0) {
+          const totalLength = pcmBuffers.reduce((sum, buf) => sum + buf.length, 0);
+          const merged = new Float32Array(totalLength);
+          let offset = 0;
+          for (const buf of pcmBuffers) {
+            merged.set(buf, offset);
+            offset += buf.length;
+          }
+          pcmBuffers = [];
+          const wavBlob = encodeWAV(merged, 16000);
+          console.log('[Little Green] WAV recording complete, Blob size:', wavBlob.size, 'bytes, type:', wavBlob.type);
+          processVoiceCommand(wavBlob);
+        }
+      } else {
+        pcmBuffers = [];
+        isListening = true;
+        micButton.classList.add('listening');
+        setVoiceStatus('🎧 Listening to you...');
+      }
+    }
+
+    function speakReply(reply, onFinished = null) {
+      let hasFinished = false;
+      const finish = () => {
+        if (hasFinished) return;
+        hasFinished = true;
+        clearTimeout(speechTimeout);
+        if (typeof onFinished === 'function') onFinished();
+      };
+
+      if (!('speechSynthesis' in window)) {
+        finish();
+        return;
+      }
+
+      // Remove all * (markdown bold/italic markers) and emojis so they are not spoken aloud
+      reply = reply
+        .replace(/\*/g, '')
+        .replace(/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F900}-\u{1FAFF}]|[\u{200D}]|[\u{FE0F}]|[\u{1F004}]|[\u{1F0CF}]|[\u{1F201}]|[\u{1F21A}]|[\u{1F22F}]|[\u{1F232}]|[\u{1F237}]|[\u{1F239}]|[\u{1F250}]|[\u{1F251}]|[\u{1F000}-\u{1F02F}]|[\u{1F0A0}-\u{1F0FF}]|[\u{1FA70}-\u{1FAFF}]/gu, '')
+        .replace(/\s{2,}/g, ' ')
+        .trim();
+
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(reply);
+      u.lang = 'en-US';
+      u.rate = 1.0;
+      u.pitch = 1.05;
+      u.onend = finish;
+      u.onerror = finish;
+      window.speechSynthesis.speak(u);
+
+      // Fallback: estimate speech duration (~15 chars/sec) + 1s buffer, max 30s
+      const estimatedMs = Math.max(2000, Math.min(30000, (reply.length / 15) * 1000 + 1000));
+      const speechTimeout = setTimeout(finish, estimatedMs);
+    }
+
+    async function processVoiceCommand(audioBlob) {
+      let settings;
+      try {
+        settings = validateAiSettings();
+      } catch (error) {
+        setVoiceStatus(`⚠️ ${error.message}`);
+        setAiChatStatus(error.message, 'warn');
+        document.getElementById('assistant-response').innerText = 'I am not connected to the AI chat service, please complete the settings above first.';
+        return;
+      }
+
+      aiChatBusy = true;
+      micButton.disabled = true;
+      setVoiceStatus('🤔 Little Green is thinking...');
+      document.getElementById('assistant-response').innerText = 'I heard your voice! Let me think about it~';
+
+      try {
+        const result = await callAiChat(settings, audioBlob, {
+          temp: sensorData.temp,
+          hum: sensorData.hum,
+          source: document.getElementById('source-status').innerText.replace('Data Source:', '').trim()
+        });
+        const cleanReply = result.reply
+          .replace(/\*/g, '')
+          .trim();
+        document.getElementById('assistant-response').innerText = cleanReply;
+        hasUsedAi = true;
+        setVoiceStatus('✅ Little Green has finished answering, you can ask more questions');
+        setAiChatStatus('AI has replied');
+        speakReply(cleanReply);
+      } catch (error) {
+        const message = error.message || 'AI is unable to reply at the moment, please try again later';
+        document.getElementById('assistant-response').innerText = 'Sorry, I cannot connect to AI right now. Please check the API key or network status.';
+        setVoiceStatus(`⚠️ ${message}`);
+        setAiChatStatus(message, 'error');
+      } finally {
+        aiChatBusy = false;
+        micButton.disabled = false;
+      }
+    }
+
+    let tmModel = null;
+    let aiWebcamStream = null;
+    let aiPredictLoopId = null;
+    let lastTriggeredClass = '';
+    let visualReplySequence = 0;
+    let isVisualAssistantSpeaking = false;
+    let visualCardWasRemoved = false;
+    const AI_CONFIDENCE_THRESHOLD = 0.75;
+    const REQUIRED_TM_CLASSES = ['Background', 'Temperature', 'Humidity'];
+    const BACKGROUND_CLASS_ALIASES = ['Background', 'Class 1'];
+
+    function extractTmModelId(url) {
+      if (!url) return null;
+      // Support: https://teachablemachine.app/model/?model=XXX
+      const appMatch = url.match(/teachablemachine\.app\/model\/?\?model=([a-zA-Z0-9_-]+)/);
+      if (appMatch) return appMatch[1];
+      // Support: https://teachablemachine.withgoogle.com/models/XXX/
+      const googleMatch = url.match(/teachablemachine\.withgoogle\.com\/models\/([a-zA-Z0-9_-]+)/);
+      if (googleMatch) return googleMatch[1];
+      return null;
+    }
+
+    function setAiStatus(elementId, label, message, tone = '') {
+      setStatus(elementId, `<strong>${label}：</strong>${message}`, tone);
+    }
+
+    function setAiAssistantMood(type, message, shouldSpeak = true, onSpeechFinished = null) {
+      const plantSvg = document.getElementById('ai-assistant-svg');
+      const mouth = document.getElementById('ai-assistant-mouth');
+      const sweat = document.getElementById('ai-sweat-drops');
+      const water = document.getElementById('ai-water-effect');
+      const responseText = document.getElementById('ai-assistant-response');
+
+      if (type === 'temp') {
+        plantSvg.className = 'plant-svg sweat-anim';
+        sweat.style.display = 'block';
+        water.style.display = 'none';
+        mouth.setAttribute('d', 'M 65 90 Q 80 115 95 90 Z');
+      } else if (type === 'hum') {
+        plantSvg.className = 'plant-svg sway-anim';
+        sweat.style.display = 'none';
+        water.style.display = 'block';
+        mouth.setAttribute('d', 'M 68 92 Q 80 105 92 92 Z');
+      } else {
+        plantSvg.className = 'plant-svg sway-anim';
+        sweat.style.display = 'none';
+        water.style.display = 'none';
+        mouth.setAttribute('d', 'M 68 92 Q 80 105 92 92 Z');
+      }
+
+      responseText.innerText = message;
+      if (shouldSpeak) speakReply(message, onSpeechFinished);
+      else if (typeof onSpeechFinished === 'function') onSpeechFinished();
+    }
+
+    async function loadTeachableMachineUrl() {
+      const urlInput = document.getElementById('tm-url-input');
+      const url = urlInput.value.trim();
+      if (!url) {
+        setAiStatus('model-status', 'Model', 'Please enter Teachable Machine URL', 'warn');
+        return;
+      }
+
+      if (!window.tmImage) {
+        setAiStatus('model-status', 'Model', 'Failed to load library, please confirm internet connection', 'error');
+        return;
+      }
+
+      const modelId = extractTmModelId(url);
+      if (!modelId) {
+        setAiStatus('model-status', 'Model', 'Invalid URL format, please use a teachablemachine.app share link', 'error');
+        return;
+      }
+
+      try {
+        stopAiWebcam();
+        lastTriggeredClass = '';
+        visualReplySequence += 1;
+        isVisualAssistantSpeaking = false;
+        visualCardWasRemoved = false;
+        setAiStatus('model-status', 'Model', 'Loading...');
+        document.getElementById('webcam-start-btn').disabled = true;
+        document.getElementById('tm-load-btn').disabled = true;
+
+        const modelUrl = `https://teachablemachine.withgoogle.com/models/${modelId}/model.json`;
+        const metadataUrl = `https://teachablemachine.withgoogle.com/models/${modelId}/metadata.json`;
+        tmModel = await tmImage.load(modelUrl, metadataUrl);
+
+        const classes = tmModel.getClassLabels ? tmModel.getClassLabels() : [];
+        document.getElementById('model-classes').innerText = classes.join(', ') || '--';
+        document.getElementById('webcam-start-btn').disabled = false;
+
+        if (classes.length > 0) {
+          setAiStatus('model-status', 'Model', `Loaded successfully`);
+        } else {
+          setAiStatus('model-status', 'Model', 'Loaded (no classes detected)', 'warn');
+        }
+        setAiAssistantMood('idle', 'Model loaded successfully! Open the camera and show me images related to temperature or humidity.', false);
+      } catch (error) {
+        console.error('AI visual model loading failed:', error);
+        tmModel = null;
+        document.getElementById('webcam-start-btn').disabled = true;
+        document.getElementById('model-classes').innerText = '--';
+        const message = error.message || 'Loading failed, please check the URL';
+        setAiStatus('model-status', 'Model', message, 'error');
+      } finally {
+        document.getElementById('tm-load-btn').disabled = false;
+      }
+    }
+
+    async function startAiWebcam() {
+      if (!tmModel) {
+        setAiStatus('camera-status', 'Camera', 'Please load model first', 'warn');
+        return;
+      }
+
+      try {
+        const video = document.getElementById('ai-webcam');
+        aiWebcamStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+        video.srcObject = aiWebcamStream;
+        video.style.display = 'block';
+        document.getElementById('webcam-placeholder').style.display = 'none';
+        document.getElementById('webcam-start-btn').disabled = true;
+        document.getElementById('webcam-stop-btn').disabled = false;
+        setAiStatus('camera-status', 'Camera', 'Predicting');
+        aiPredictLoop();
+      } catch (error) {
+        console.error('Camera opening failed:', error);
+        setAiStatus('camera-status', 'Camera', 'Failed to open, please allow camera permission', 'error');
+      }
+    }
+
+    function stopAiWebcam() {
+      if (aiPredictLoopId) cancelAnimationFrame(aiPredictLoopId);
+      aiPredictLoopId = null;
+      if (aiWebcamStream) {
+        aiWebcamStream.getTracks().forEach(track => track.stop());
+        aiWebcamStream = null;
+      }
+
+      const video = document.getElementById('ai-webcam');
+      const placeholder = document.getElementById('webcam-placeholder');
+      if (video) {
+        video.pause();
+        video.srcObject = null;
+        video.style.display = 'none';
+      }
+      if (placeholder) placeholder.style.display = 'block';
+      const startBtn = document.getElementById('webcam-start-btn');
+      const stopBtn = document.getElementById('webcam-stop-btn');
+      if (startBtn) startBtn.disabled = !tmModel;
+      if (stopBtn) stopBtn.disabled = true;
+      if (document.getElementById('camera-status')) setAiStatus('camera-status', 'Camera', 'Off');
+    }
+
+    let aiPredictLoopFrameCount = 0;
+
+    async function aiPredictLoop() {
+      aiPredictLoopFrameCount++;
+      const video = document.getElementById('ai-webcam');
+      if (!tmModel || !video || !aiWebcamStream) return;
+
+      if (video.readyState >= 2) {
+        const predictions = await tmModel.predict(video);
+        const best = predictions.reduce((top, item) => item.probability > top.probability ? item : top, predictions[0]);
+        const className = best.probability >= AI_CONFIDENCE_THRESHOLD ? best.className : 'Unrecognized';
+
+        // Update prediction display every frame
+        document.getElementById('prediction-class').innerText = className;
+        document.getElementById('prediction-score').innerText = `${Math.round(best.probability * 100)}%`;
+
+        const isBg = className === 'Unrecognized' || BACKGROUND_CLASS_ALIASES.includes(className);
+
+        // Debug: log state every 60 frames (~1 second) to see what's happening
+        if (aiPredictLoopFrameCount % 60 === 0) {
+          console.log(`[TM] Loop alive: frame=${aiPredictLoopFrameCount}, className="${className}", speaking=${isVisualAssistantSpeaking}, last="${lastTriggeredClass}", isBg=${isBg}`);
+        }
+
+        if (isBg) {
+          visualCardWasRemoved = true;
+          if (!isVisualAssistantSpeaking) lastTriggeredClass = '';
+        } else if (!isVisualAssistantSpeaking && className !== lastTriggeredClass) {
+          // Only trigger when not speaking AND class has changed
+          console.log(`[TM] ✓ Triggering: className="${className}", last="${lastTriggeredClass}", speaking=${isVisualAssistantSpeaking}`);
+          lastTriggeredClass = className;
+          visualCardWasRemoved = false;
+          isVisualAssistantSpeaking = true;
+
+          const replySequence = ++visualReplySequence;
+          const triggerTime = Date.now();
+          const unlockPrediction = () => {
+            console.log(`[TM] ✓ Speech finished seq=${replySequence}, current=${visualReplySequence}, isCurrent=${replySequence === visualReplySequence}`);
+            if (replySequence !== visualReplySequence) return;
+            isVisualAssistantSpeaking = false;
+            if (visualCardWasRemoved) lastTriggeredClass = '';
+            console.log(`[TM] ✓ Unlocked! isVisualAssistantSpeaking=${isVisualAssistantSpeaking}, lastTriggeredClass="${lastTriggeredClass}"`);
+          };
+
+          // Forced timeout: if speech doesn't finish within 12 seconds, force unlock
+          setTimeout(() => {
+            console.log(`[TM] ⏰ Forced timeout after ${Date.now() - triggerTime}ms, speaking=${isVisualAssistantSpeaking}, seq=${replySequence}, current=${visualReplySequence}`);
+            if (isVisualAssistantSpeaking && replySequence === visualReplySequence) {
+              console.warn('[TM] ⚠️ Speech onend never fired! Forcing unlock.');
+              isVisualAssistantSpeaking = false;
+              if (visualCardWasRemoved) lastTriggeredClass = '';
+            }
+          }, 8000);
+
+          console.log(`[Little Green] Detected class: ${className}, probability: ${best.probability.toFixed(3)}`);
+          if (className === 'Temperature' || className === 'Temp' || className === '溫度') {
+            setAiAssistantMood('temp', `You showed me an image related to temperature, the current temperature is ${sensorData.temp.toFixed(1)} degrees!`, true, unlockPrediction);
+          } else if (className === 'Humidity' || className === 'Hum' || className === '濕度') {
+            const advice = sensorData.hum < 40
+              ? 'The soil may be a bit dry, please give me some water!'
+              : sensorData.hum > 75
+                ? 'Humidity is quite high right now, no need to water too much.'
+                : 'Humidity is just right, I feel quite comfortable.';
+            setAiAssistantMood('hum', `You showed me an image related to humidity, the current humidity is ${Math.round(sensorData.hum)}%.\n${advice}`, true, unlockPrediction);
+          }
+        }
+      }
+
+      aiPredictLoopId = requestAnimationFrame(aiPredictLoop);
+    }
+  </script>
+  <script>
+    // Replaces the former first-page story with a scrollable photosynthesis lesson.
+    const lessonQuizDetails = {
+      start: { correct: 'B', success: 'Correct! Plants need water and sunlight to carry out photosynthesis successfully.', retry: 'Think again: Little Green needs more than just water, it also needs an energy source.' },
+      materials: { correct: 'C', success: 'Great! Sunlight provides energy; water and carbon dioxide are the materials for making nutrients.', retry: 'Hint: Leaves need both energy and two materials.' },
+      water: { correct: 'A', success: 'That\'s right! Roots absorb water, then transport it through the stem\'s vascular bundles to the leaves.', retry: 'Imagine the plant\'s roots like a straw, where does the water enter first?' },
+      gas: { correct: 'B', success: 'Correct! Carbon dioxide enters through the stomata; oxygen is released from the leaves.', retry: 'Carbon dioxide is the raw material plants need to make nutrients.' },
+      result: { correct: 'C', success: 'Awesome! Plants produce nutrients and release oxygen, which is important for themselves and other living things.', retry: 'Think about it: which gas do humans need for breathing?' }
+    };
+    let completedLessonQuizzes = new Set();
+
+    function renderPhotosynthesisClassroom() {
+      const page = document.getElementById('mode1');
+      page.innerHTML = `
+        <main class="lesson-page" aria-label="Little Green's Photosynthesis Interactive Classroom">
+          <section class="lesson-hero">
+            <div>
+              <div class="lesson-kicker">Little Green's Science Class</div>
+              <h1><span>Photosynthesis:</span> <span>The Magic Factory in Leaves</span></h1>
+              <p>Follow Little Green from a droopy little plant, and see how sunlight, water, and air together become <span class="keep-together">nutrients</span> for its growth.</p>
+            </div>
+            <svg class="lesson-hero-sprout" viewBox="0 0 180 135" role="img" aria-label="Energetic Little Green plant">
+              <path d="M45 112 L57 130 L137 130 L148 112 Z" fill="#D98636" stroke="#7D5137" stroke-width="4"/><ellipse cx="96" cy="111" rx="52" ry="9" fill="#75452D"/>
+              <path d="M96 111 V66" stroke="#32843E" stroke-width="10" stroke-linecap="round"/><path d="M94 81 Q55 78 60 48 Q83 49 95 69" fill="#68B968" stroke="#347641" stroke-width="4"/><path d="M99 85 Q137 80 137 48 Q112 51 97 71" fill="#79C76E" stroke="#347641" stroke-width="4"/>
+              <circle cx="96" cy="50" r="27" fill="#78C86D" stroke="#347641" stroke-width="4"/><circle cx="86" cy="48" r="3.5" fill="#263A2B"/><circle cx="106" cy="48" r="3.5" fill="#263A2B"/><path d="M86 59 Q96 69 106 59" fill="none" stroke="#263A2B" stroke-width="4" stroke-linecap="round"/>
+            </svg>
+          </section>
+          <div class="lesson-progress-nav" aria-live="polite">
+            <div class="lesson-progress-text"><span id="lesson-progress-label">Section 1: What Does Little Green Need?</span><span id="lesson-score">0 / 5 Completed</span></div>
+            <div class="lesson-progress-track"><div id="lesson-progress-fill" class="lesson-progress-fill"></div></div>
+          </div>
+
+          <section class="lesson-section" data-lesson-section="1">
+            <div class="lesson-copy"><span class="lesson-chip">Story Begins</span><h2>Why is Little Green Drooping?</h2><p>Little Green is placed by the window, but the soil is dry and the leaves are not energetic. To make plants grow healthy, you can't just rely on fertilizer; it needs water and sunlight to create its own nutrients.</p><div class="lesson-keypoint">Key Point: Plants don't "eat" nutrients from soil to grow, they use photosynthesis to make nutrients.</div><div class="lesson-controls"><button class="lesson-action" data-lesson-read="Little Green is a bit droopy today because the soil is too dry and there's not enough sunlight. Plants need water and sunlight to start making nutrients.">Read Little Green's Words</button><button class="lesson-action secondary" data-lesson-stop>Stop Reading</button></div></div>
+            <div class="lesson-scene warm"><svg viewBox="0 0 500 320" role="img" aria-label="Little Green lacking water and sunlight"><g class="sun-rays"><circle cx="410" cy="56" r="32" fill="#FFD650" stroke="#E2A92D" stroke-width="4"/><g stroke="#E2A92D" stroke-width="5" stroke-linecap="round"><path d="M410 11v-14"/><path d="M410 115v-14"/><path d="M365 56h-14"/><path d="M469 56h14"/><path d="M378 24l-10-10"/><path d="M442 88l10 10"/><path d="M442 24l10-10"/><path d="M378 88l-10 10"/></g></g><path d="M165 261 L191 302 L314 302 L339 261 Z" fill="#D78234" stroke="#7D5137" stroke-width="5"/><ellipse cx="252" cy="261" rx="86" ry="15" fill="#74452E"/><g class="lesson-plant"><path d="M252 260 V156" stroke="#3E8744" stroke-width="12" stroke-linecap="round"/><path d="M247 200 Q194 196 194 164 Q228 165 250 186" fill="#7CAD60" stroke="#497740" stroke-width="5"/><path d="M256 196 Q310 190 313 158 Q276 160 254 183" fill="#7CAD60" stroke="#497740" stroke-width="5"/><circle cx="252" cy="143" r="47" fill="#86B968" stroke="#497740" stroke-width="5"/><path d="M230 136q9-9 18 0M257 136q9-9 18 0" fill="none" stroke="#2D3B2B" stroke-width="5" stroke-linecap="round"/><path d="M240 164 Q252 154 264 164" fill="none" stroke="#2D3B2B" stroke-width="5" stroke-linecap="round"/></g></svg><div class="scene-caption intro-caption">With water + sunlight, photosynthesis can begin</div></div>
+            <div class="lesson-quiz" data-quiz="start"><h3>Quick Question: What does Little Green need most first?</h3><div class="quiz-options"><button class="quiz-choice" data-quiz-choice="A">A. Just fertilizer</button><button class="quiz-choice" data-quiz-choice="B">B. Water and sunlight</button><button class="quiz-choice" data-quiz-choice="C">C. More flower pots</button></div><div class="quiz-feedback" aria-live="polite"></div></div>
+          </section>
+
+          <section id="lesson-factory" class="lesson-section" data-lesson-section="2">
+            <div class="lesson-copy"><span class="lesson-chip">Concept Analogy</span><h2>Chloroplasts Are the Plant's Small Factory</h2><p>There are many chloroplasts in the leaves. They are like small factories: sunlight provides energy, water and carbon dioxide are the materials, and finally they produce nutrients that the plant can use.</p><div class="lesson-keypoint">Key Point: Photosynthesis mainly occurs in the chloroplasts of leaves.</div><div class="lesson-controls"><button class="lesson-action" data-lesson-read="The chloroplasts in the leaves are like small factories. Sunlight provides energy, and water and carbon dioxide are the materials for making nutrients.">Read Little Green's Words</button><button class="lesson-action secondary" data-lesson-stop>Stop Reading</button></div></div>
+            <div class="lesson-scene sky"><svg viewBox="0 0 500 320" role="img" aria-label="Chloroplast Factory Diagram"><defs><marker id="energy-arrow" markerWidth="10" markerHeight="10" refX="8" refY="4" orient="auto"><path d="M0 0 L9 4 L0 8 Z" fill="#E9A829"/></marker><marker id="material-arrow" markerWidth="10" markerHeight="10" refX="8" refY="4" orient="auto"><path d="M0 0 L9 4 L0 8 Z" fill="#468BB1"/></marker><marker id="food-arrow" markerWidth="10" markerHeight="10" refX="8" refY="4" orient="auto"><path d="M0 0 L9 4 L0 8 Z" fill="#E96650"/></marker></defs><g class="sun-rays"><circle cx="75" cy="60" r="29" fill="#FFD650" stroke="#E1A72A" stroke-width="4"/><g stroke="#E1A72A" stroke-width="4" stroke-linecap="round"><path d="M75 16V2"/><path d="M75 118v14"/><path d="M31 60H16"/><path d="M119 60h15"/><path d="M44 29L33 18"/><path d="M106 91l11 11"/><path d="M106 29l11-11"/><path d="M44 91L33 102"/></g></g><text x="75" y="125" text-anchor="middle" fill="#735924" font-size="16" font-weight="800">Sunlight Energy</text><path d="M145 139 L250 70 L355 139 Z" fill="#F9E986" stroke="#55794B" stroke-width="7" stroke-linejoin="round"/><path d="M160 139V270H340V139" fill="#F9F7BF" stroke="#55794B" stroke-width="7" stroke-linejoin="round"/><rect x="194" y="151" width="112" height="74" rx="26" fill="#75C56B" stroke="#347741" stroke-width="5"/><text x="250" y="194" text-anchor="middle" fill="#fff" font-size="21" font-weight="800">Chloroplast</text><path class="factory-arrow" d="M108 86 L204 151" fill="none" stroke="#E9A829" stroke-width="8" stroke-linecap="round" marker-end="url(#energy-arrow)"/><path class="factory-arrow" d="M310 185 H425" fill="none" stroke="#E96650" stroke-width="8" stroke-linecap="round" marker-end="url(#food-arrow)"/><text x="422" y="166" text-anchor="middle" fill="#A74839" font-size="18" font-weight="800">Nutrients</text><path d="M118 239 H183" fill="none" stroke="#468BB1" stroke-width="7" stroke-linecap="round" marker-end="url(#material-arrow)"/><g class="factory-material"><circle cx="72" cy="224" r="14" fill="#48BDEB"/><circle cx="72" cy="256" r="14" fill="#91A8B8"/><text x="72" y="229" text-anchor="middle" fill="#fff" font-size="12" font-weight="800">Water</text><text x="72" y="261" text-anchor="middle" fill="#fff" font-size="11" font-weight="800">CO₂</text></g><text x="104" y="292" text-anchor="middle" fill="#43605A" font-size="15" font-weight="800">Materials enter from left</text></svg><div class="scene-caption">Think of abstract concepts as a factory where "materials enter and products leave"</div></div>
+            <div class="lesson-quiz" data-quiz="materials"><h3>Quick Question: Which of the following is the main materials and energy needed for photosynthesis?</h3><div class="quiz-options"><button class="quiz-choice" data-quiz-choice="A">A. Soil, fertilizer, oxygen</button><button class="quiz-choice" data-quiz-choice="B">B. Moonlight, water, oxygen</button><button class="quiz-choice" data-quiz-choice="C">C. Sunlight, water, carbon dioxide</button></div><div class="quiz-feedback" aria-live="polite"></div></div>
+          </section>
+
+          <section class="lesson-section" data-lesson-section="3">
+            <div class="lesson-copy"><span class="lesson-chip">Process 1: Water</span><h2>Water Travels from Roots to Leaves</h2><p>Plant roots absorb water from the soil. The water travels upward through the vascular bundles in the stem, finally reaching the leaves, becoming an important material for photosynthesis.</p><div class="lesson-keypoint">Key Point: Water isn't fully utilized by simply pouring it on the leaves; after being absorbed by the roots, it needs to be transported through the stem.</div><div class="lesson-controls"><button class="lesson-action" data-lesson-read="Water is first absorbed by the roots from the soil, then transported upward through the vascular bundles in the stem to the leaves.">Read Little Green's Words</button><button class="lesson-action secondary" data-lesson-stop>Stop Reading</button></div></div>
+            <div class="lesson-scene"><svg viewBox="0 0 500 320" role="img" aria-label="Water rising from roots to leaves"><path d="M0 222 Q110 203 225 224 T500 220 V320 H0Z" fill="#C99D69"/><g class="lesson-plant"><path d="M250 220 V65" stroke="#368441" stroke-width="13" stroke-linecap="round"/><path d="M247 104 Q184 87 168 43 Q223 46 248 80" fill="#72BD66" stroke="#36733E" stroke-width="5"/><path d="M253 133 Q326 109 345 63 Q289 69 252 108" fill="#83CB72" stroke="#36733E" stroke-width="5"/><path d="M250 218q-37 28-70 36M250 218q38 29 74 35M250 218q-10 35-6 56" fill="none" stroke="#8A6142" stroke-width="6"/></g><path class="water-drop" d="M244 237 C237 227 241 216 250 205 C261 217 266 228 257 237 C253 241 248 241 244 237Z" fill="#38B5E5"/><path class="water-drop second" d="M244 271 C237 261 241 250 250 239 C261 251 266 262 257 271 C253 275 248 275 244 271Z" fill="#38B5E5"/><text x="274" y="166" fill="#267CA0" font-size="17" font-weight="800">Water transported upward through stem</text></svg><div class="scene-caption">Blue water droplets follow the stem, rising from the roots all the way to the leaves</div></div>
+            <div class="lesson-quiz" data-quiz="water"><h3>Quick Question: Which part of the plant first absorbs water?</h3><div class="quiz-options"><button class="quiz-choice" data-quiz-choice="A">A. Roots</button><button class="quiz-choice" data-quiz-choice="B">B. Petals</button><button class="quiz-choice" data-quiz-choice="C">C. Fruits</button></div><div class="quiz-feedback" aria-live="polite"></div></div>
+          </section>
+
+          <section class="lesson-section" data-lesson-section="4">
+            <div class="lesson-copy"><span class="lesson-chip">Process 2: Gases</span><h2>Carbon Dioxide Enters, Oxygen Leaves</h2><p>The surface of the leaves has tiny stomata. Carbon dioxide in the air enters the leaves through the stomata; after photosynthesis occurs, oxygen is released from the leaves into the air.</p><div class="lesson-keypoint">Key Point: Carbon dioxide is the raw material; oxygen is an important product of photosynthesis.</div><div class="lesson-controls"><button class="lesson-action" data-lesson-read="The leaves have tiny stomata. Carbon dioxide enters the leaves through the stomata, and the oxygen produced after photosynthesis is released from the leaves.">Read Little Green's Words</button><button class="lesson-action secondary" data-lesson-stop>Stop Reading</button></div></div>
+            <div class="lesson-scene sky"><svg viewBox="0 0 500 320" role="img" aria-label="CO₂ enters leaves and O₂ leaves"><path d="M250 270 C145 226 128 104 250 48 C372 104 355 226 250 270 Z" fill="#78C96D" stroke="#367741" stroke-width="6" stroke-linejoin="round"/><path d="M250 250V73" stroke="#3C8244" stroke-width="6"/><path d="M250 151 Q199 131 166 104M250 151q51-20 84-47M250 203q-51 1-84 28M250 203q51 1 84 28" fill="none" stroke="#3C8244" stroke-width="4" stroke-linecap="round"/><ellipse cx="250" cy="158" rx="11" ry="20" fill="#416E43"/><g class="gas-co2"><circle cx="70" cy="128" r="25" fill="#98A4B4"/><text x="70" y="133" text-anchor="middle" fill="#fff" font-size="10" font-weight="800">CO₂</text><circle cx="104" cy="199" r="23" fill="#98A4B4"/><text x="104" y="204" text-anchor="middle" fill="#fff" font-size="10" font-weight="800">CO₂</text></g><g class="gas-o2"><circle cx="319" cy="132" r="21" fill="#7BC7F0"/><text x="319" y="137" text-anchor="middle" fill="#fff" font-size="12" font-weight="800">O₂</text><circle cx="340" cy="205" r="20" fill="#7BC7F0"/><text x="340" y="210" text-anchor="middle" fill="#fff" font-size="12" font-weight="800">O₂</text></g><text x="101" y="74" text-anchor="middle" fill="#5F6973" font-size="17" font-weight="800">CO₂ enters</text><text x="404" y="271" text-anchor="middle" fill="#257AA0" font-size="17" font-weight="800">O₂ released</text></svg><div class="scene-caption">Gray carbon dioxide moves toward the leaves; blue oxygen leaves from the leaves</div></div>
+            <div class="lesson-quiz" data-quiz="gas"><h3>Quick Question: Which gas is the raw material that plants need to absorb for photosynthesis?</h3><div class="quiz-options"><button class="quiz-choice" data-quiz-choice="A">A. Oxygen</button><button class="quiz-choice" data-quiz-choice="B">B. Carbon Dioxide</button><button class="quiz-choice" data-quiz-choice="C">C. Helium</button></div><div class="quiz-feedback" aria-live="polite"></div></div>
+          </section>
+
+          <section class="lesson-section" data-lesson-section="5">
+            <div class="lesson-copy"><span class="lesson-chip">Making Nutrients</span><h2>Materials Come Together, Producing Nutrients and Oxygen</h2><p>In the chloroplasts, the energy from sunlight helps water and carbon dioxide transform into nutrients. Nutrients are sent to different parts of the plant, supporting growth, flowering, and fruiting; oxygen is released into the air.</p><div class="lesson-keypoint">Key Point: Photosynthesis converts light energy into nutrients that plants can use, which is also the starting point of many food chains.</div><div class="lesson-controls"><button class="lesson-action" data-lesson-read="Sunlight, water, and carbon dioxide work together in chloroplasts to produce nutrients; nutrients are sent throughout the plant, and oxygen is released into the air.">Read Little Green's Words</button><button class="lesson-action secondary" data-lesson-stop>Stop Reading</button></div></div>
+            <div class="lesson-scene warm"><svg viewBox="0 0 500 320" role="img" aria-label="Photosynthesis producing nutrients and oxygen"><defs><marker id="product-input-arrow" markerWidth="10" markerHeight="10" refX="8" refY="4" orient="auto"><path d="M0 0 L9 4 L0 8 Z" fill="#D79F22"/></marker><marker id="product-water-arrow" markerWidth="10" markerHeight="10" refX="8" refY="4" orient="auto"><path d="M0 0 L9 4 L0 8 Z" fill="#2C9BC9"/></marker><marker id="product-carbon-arrow" markerWidth="10" markerHeight="10" refX="8" refY="4" orient="auto"><path d="M0 0 L9 4 L0 8 Z" fill="#6F7D8A"/></marker><marker id="product-output-arrow" markerWidth="10" markerHeight="10" refX="8" refY="4" orient="auto"><path d="M0 0 L9 4 L0 8 Z" fill="#E96650"/></marker></defs><g class="sun-rays"><circle cx="65" cy="62" r="29" fill="#FFD650" stroke="#E1A72A" stroke-width="4"/><g stroke="#E1A72A" stroke-width="4" stroke-linecap="round"><path d="M65 18V4"/><path d="M65 106v14"/><path d="M21 62H7"/><path d="M109 62h14"/><path d="M34 31L23 20"/><path d="M96 93l11 11"/><path d="M96 31l11-11"/><path d="M34 93L23 104"/></g><text x="65" y="67" text-anchor="middle" fill="#7A5B15" font-size="14" font-weight="900">Sun</text></g><circle cx="65" cy="146" r="23" fill="#42B9E4"/><text x="65" y="151" text-anchor="middle" fill="#fff" font-size="15" font-weight="800">Water</text><circle cx="65" cy="222" r="27" fill="#97A3B2"/><text x="65" y="227" text-anchor="middle" fill="#fff" font-size="12" font-weight="800">CO₂</text><path class="factory-arrow" d="M104 83 L188 126" stroke="#E9A829" stroke-width="7" fill="none" marker-end="url(#product-input-arrow)"/><path class="factory-arrow" d="M94 146 H186" stroke="#2C9BC9" stroke-width="7" fill="none" marker-end="url(#product-water-arrow)"/><path class="factory-arrow" d="M94 220 L188 191" stroke="#6F7D8A" stroke-width="7" fill="none" marker-end="url(#product-carbon-arrow)"/><ellipse cx="255" cy="160" rx="72" ry="52" fill="#75C969" stroke="#347841" stroke-width="6"/><ellipse cx="255" cy="160" rx="43" ry="28" fill="#4EA34E"/><text x="255" y="166" text-anchor="middle" fill="#fff" font-size="18" font-weight="900">Chloroplast</text><path d="M307 126" H442" stroke="#E96650" stroke-width="7" fill="none" marker-end="url(#product-output-arrow)"/><path d="M307 200 H442" stroke="#5AAFE0" stroke-width="7" fill="none" marker-end="url(#product-output-arrow)"/><g class="product-output"><circle cx="316" cy="126" r="18" fill="#F7A84D"/><text x="316" y="132" text-anchor="middle" fill="#fff" font-size="13" font-weight="800">Nutrients</text><circle cx="316" cy="200" r="18" fill="#75C8EF"/><text x="316" y="206" text-anchor="middle" fill="#fff" font-size="13" font-weight="800">O₂</text></g><rect x="67" y="258" width="366" height="38" rx="19" fill="#FFF8D9" stroke="#E2B547" stroke-width="2"/><text x="250" y="283" text-anchor="middle" fill="#5D6A37" font-size="17" font-weight="900">Sunlight + Water + CO₂ → Nutrients + O₂</text></svg><div class="scene-caption">Photosynthesis converts materials into energy for Little Green's growth</div></div>
+            <div class="lesson-quiz" data-quiz="result"><h3>Quick Question: After photosynthesis, which gas do plants release that is very important for human breathing?</h3><div class="quiz-options"><button class="quiz-choice" data-quiz-choice="A">A. Carbon Dioxide</button><button class="quiz-choice" data-quiz-choice="B">B. Nitrogen</button><button class="quiz-choice" data-quiz-choice="C">C. Oxygen</button></div><div class="quiz-feedback" aria-live="polite"></div></div>
+          </section>
+
+          <section class="lesson-section lesson-final" data-lesson-section="6">
+            <div class="lesson-copy"><span class="lesson-chip">Key Points Summary</span><h2>Little Green's Photosynthesis Notes</h2><p><strong>Sunlight</strong> provides energy; <strong>roots</strong> absorb water; <strong>stomata</strong> let carbon dioxide in; <strong>chloroplasts</strong> produce nutrients and release oxygen. Now use the current environment data to see if Little Green feels comfortable.</p><div class="lesson-keypoint">Reminder: Temperature and humidity reflect the plant's living environment; for photosynthesis, sufficient light, water, and carbon dioxide are still required.</div><div class="lesson-controls"><button class="lesson-action" data-lesson-read="Key points: Sunlight provides energy, roots absorb water, carbon dioxide enters through stomata, chloroplasts produce nutrients and release oxygen.">Read Key Points</button><button class="lesson-action secondary" data-lesson-stop>Stop Reading</button></div></div>
+            <div class="lesson-scene"><svg viewBox="0 0 500 320" role="img" aria-label="Little Green growing healthy after completing the lesson"><path d="M169 257 L195 299 L314 299 L341 257Z" fill="#D98636" stroke="#7D5137" stroke-width="5"/><ellipse cx="255" cy="257" rx="85" ry="15" fill="#74452E"/><g class="lesson-plant"><path d="M255 256V132" stroke="#318341" stroke-width="13" stroke-linecap="round"/><path d="M248 198Q174 184 166 126Q226 130 253 175" fill="#70BF68" stroke="#347741" stroke-width="5"/><path d="M262 199Q338 181 343 126Q284 131 258 175" fill="#7CCB73" stroke="#347741" stroke-width="5"/><circle cx="255" cy="116" r="52" fill="#79C96E" stroke="#347741" stroke-width="5"/><circle cx="235" cy="112" r="5" fill="#263A2B"/><circle cx="275" cy="112" r="5" fill="#263A2B"/><path d="M234 132Q255 151 276 132" fill="none" stroke="#263A2B" stroke-width="5" stroke-linecap="round"/><circle cx="255" cy="48" r="16" fill="#F3A7C4"/><circle cx="232" cy="55" r="14" fill="#F18DB8"/><circle cx="278" cy="55" r="14" fill="#F18DB8"/></g><text x="255" y="31" text-anchor="middle" fill="#28733A" font-size="20" font-weight="900">Little Green is Energetic!</text></svg><div class="scene-caption">After learning the process, try using data to observe the plant's environment</div></div>
+            <div class="lesson-quiz"><h3>Extended Challenge: How does Little Green feel in the current environment?</h3><div class="sensor-challenge"><div class="sensor-reading"><div>Current Temperature <strong id="lesson-sensor-temp">--</strong></div><div>Current Humidity <strong id="lesson-sensor-hum">--</strong></div></div><button class="lesson-action" id="lesson-check-environment">Analyze Little Green's Environment</button><div id="lesson-environment-result" class="quiz-feedback" aria-live="polite">Click the button to use the current temperature and humidity data from the dashboard.</div></div></div>
+            <div id="lesson-badge" class="lesson-badge">Photosynthesis Expert! You've completed 5 knowledge challenges and learned to care for Little Green's environment using data.</div>
+            <div class="lesson-controls" style="grid-column:1 / -1; justify-content:center;"><button id="lesson-restart" class="lesson-action secondary">Restart This Lesson</button></div>
+          </section>
+        </main>`;
+
+      setupPhotosynthesisInteractions(page);
+      updateLessonSensorChallenge();
+    }
+
+    function refinePhotosynthesisDiagrams(page) {
+      const factory = page.querySelector('svg[aria-label="Chloroplast Factory Diagram"]');
+      if (factory) factory.innerHTML = `<defs><marker id="energy-arrow" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0 0 L7 3 L0 6 Z" fill="#E9A829"/></marker><marker id="material-arrow" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0 0 L7 3 L0 6 Z" fill="#468BB1"/></marker><marker id="food-arrow" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0 0 L7 3 L0 6 Z" fill="#E96650"/></marker></defs><g class="sun-rays"><circle cx="75" cy="60" r="29" fill="#FFD650" stroke="#E1A72A" stroke-width="4"/><g stroke="#E1A72A" stroke-width="4" stroke-linecap="round"><path d="M75 16V2"/><path d="M75 118v14"/><path d="M31 60H16"/><path d="M119 60h15"/><path d="M44 29L33 18"/><path d="M106 91l11 11"/><path d="M106 29l11-11"/><path d="M44 91L33 102"/></g></g><text x="75" y="149" text-anchor="middle" fill="#735924" font-size="16" font-weight="800">Sunlight Energy</text><path d="M145 139 L250 70 L355 139 Z" fill="#F9E986" stroke="#55794B" stroke-width="7" stroke-linejoin="round"/><path d="M160 139V270H340V139" fill="#F9F7BF" stroke="#55794B" stroke-width="7" stroke-linejoin="round"/><rect x="194" y="151" width="112" height="74" rx="26" fill="#75C56B" stroke="#347741" stroke-width="5"/><text x="250" y="194" text-anchor="middle" fill="#fff" font-size="17" font-weight="800">Chloroplast</text><path class="factory-arrow" d="M108 86 L204 151" fill="none" stroke="#E9A829" stroke-width="5" stroke-linecap="round" marker-end="url(#energy-arrow)"/><path class="factory-arrow" d="M310 185 H425" fill="none" stroke="#E96650" stroke-width="5" stroke-linecap="round" marker-end="url(#food-arrow)"/><text x="422" y="166" text-anchor="middle" fill="#A74839" font-size="18" font-weight="800">Nutrients</text><path d="M128 239 H183" fill="none" stroke="#468BB1" stroke-width="5" stroke-linecap="round" marker-end="url(#material-arrow)"/><g class="factory-material"><circle cx="55" cy="202" r="13" fill="#48BDEB"/><circle cx="91" cy="222" r="13" fill="#48BDEB"/><circle cx="55" cy="250" r="13" fill="#91A8B8"/><circle cx="91" cy="270" r="13" fill="#91A8B8"/><text x="55" y="207" text-anchor="middle" fill="#fff" font-size="11" font-weight="800">Water</text><text x="91" y="227" text-anchor="middle" fill="#fff" font-size="11" font-weight="800">Water</text><text x="55" y="255" text-anchor="middle" fill="#fff" font-size="9" font-weight="800">CO₂</text><text x="91" y="275" text-anchor="middle" fill="#fff" font-size="9" font-weight="800">CO₂</text></g><text x="105" y="298" text-anchor="middle" fill="#43605A" font-size="15" font-weight="800">Water + CO₂</text>`;
+
+      factory?.parentElement.querySelector('.scene-caption')?.classList.add('factory-caption');
+      const gas = page.querySelector('svg[aria-label="CO₂ enters leaves and O₂ leaves"]');
+      if (gas) gas.innerHTML = `<path d="M250 270 C170 235 126 132 250 45 C374 132 330 235 250 270 Z" fill="#78C96D" stroke="#367741" stroke-width="6" stroke-linejoin="round"/><path d="M250 246V76" stroke="#3C8244" stroke-width="6"/><path d="M250 150 Q207 132 177 108M250 150q43-18 73-42M250 198q-42 1-70 24M250 198q42 1 70 24" fill="none" stroke="#3C8244" stroke-width="4" stroke-linecap="round"/><ellipse cx="250" cy="157" rx="11" ry="20" fill="#416E43"/><g class="gas-co2"><circle cx="70" cy="128" r="25" fill="#98A4B4"/><text x="70" y="133" text-anchor="middle" fill="#fff" font-size="10" font-weight="800">CO₂</text><circle cx="104" cy="199" r="23" fill="#98A4B4"/><text x="104" y="204" text-anchor="middle" fill="#fff" font-size="10" font-weight="800">CO₂</text></g><g class="gas-o2"><circle cx="319" cy="132" r="21" fill="#7BC7F0"/><text x="319" y="137" text-anchor="middle" fill="#fff" font-size="12" font-weight="800">O₂</text><circle cx="340" cy="205" r="20" fill="#7BC7F0"/><text x="340" y="210" text-anchor="middle" fill="#fff" font-size="12" font-weight="800">O₂</text></g><text x="101" y="74" text-anchor="middle" fill="#5F6973" font-size="17" font-weight="800">CO₂ enters</text><text x="404" y="271" text-anchor="middle" fill="#257AA0" font-size="17" font-weight="800">O₂ released</text>`;
+
+      if (gas) gas.innerHTML = `<defs><clipPath id="leaf-clip"><path d="M250 276 C162 232 128 124 250 42 C372 124 338 232 250 276 Z"/></clipPath></defs><path d="M250 276 C162 232 128 124 250 42 C372 124 338 232 250 276 Z" fill="#78C96D" stroke="#367741" stroke-width="6" stroke-linejoin="round"/><g clip-path="url(#leaf-clip)"><path d="M250 254V72" stroke="#3C8244" stroke-width="6"/><path d="M250 132 Q211 112 177 84M250 132q39-20 73-48M250 174q-48-7-89-23M250 174q48-7 89-23M250 218q-43 10-73 31M250 218q43 10 73 31" fill="none" stroke="#3C8244" stroke-width="4" stroke-linecap="round"/></g><ellipse cx="250" cy="157" rx="11" ry="20" fill="#416E43"/><g class="gas-co2"><circle cx="70" cy="128" r="25" fill="#98A4B4"/><text x="70" y="133" text-anchor="middle" fill="#fff" font-size="10" font-weight="800">CO₂</text><circle cx="104" cy="199" r="23" fill="#98A4B4"/><text x="104" y="204" text-anchor="middle" fill="#fff" font-size="10" font-weight="800">CO₂</text></g><g class="gas-o2"><circle cx="319" cy="132" r="21" fill="#7BC7F0"/><text x="319" y="137" text-anchor="middle" fill="#fff" font-size="12" font-weight="800">O₂</text><circle cx="340" cy="205" r="20" fill="#7BC7F0"/><text x="340" y="210" text-anchor="middle" fill="#fff" font-size="12" font-weight="800">O₂</text></g><text x="101" y="74" text-anchor="middle" fill="#5F6973" font-size="17" font-weight="800">CO₂ enters</text><text x="404" y="271" text-anchor="middle" fill="#257AA0" font-size="17" font-weight="800">O₂ released</text>`;
+
+      const product = page.querySelector('svg[aria-label="Photosynthesis producing nutrients and oxygen"]');
+      if (product) product.innerHTML = `<defs><marker id="product-input-arrow" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0 0 L7 3 L0 6 Z" fill="#D79F22"/></marker><marker id="product-water-arrow" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0 0 L7 3 L0 6 Z" fill="#2C9BC9"/></marker><marker id="product-carbon-arrow" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0 0 L7 3 L0 6 Z" fill="#6F7D8A"/></marker><marker id="product-output-arrow" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0 0 L7 3 L0 6 Z" fill="#E96650"/></marker><marker id="product-oxygen-arrow" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0 0 L7 3 L0 6 Z" fill="#5AAFE0"/></marker></defs><g class="sun-rays"><circle cx="65" cy="57" r="27" fill="#FFD650" stroke="#E1A72A" stroke-width="4"/><g stroke="#E1A72A" stroke-width="4" stroke-linecap="round"><path d="M65 15V2"/><path d="M65 99v13"/><path d="M23 57H9"/><path d="M107 57h14"/><path d="M35 27L25 17"/><path d="M95 87l10 10"/><path d="M95 27l10-10"/><path d="M35 87L25 97"/></g><text x="65" y="62" text-anchor="middle" fill="#7A5B15" font-size="14" font-weight="900">Sun</text></g><circle cx="65" cy="132" r="21" fill="#42B9E4"/><text x="65" y="137" text-anchor="middle" fill="#fff" font-size="14" font-weight="800">Water</text><circle cx="65" cy="196" r="25" fill="#97A3B2"/><text x="65" y="201" text-anchor="middle" fill="#fff" font-size="11" font-weight="800">CO₂</text><path class="factory-arrow" d="M102 78 L187 124" stroke="#E9A829" stroke-width="5" fill="none" marker-end="url(#product-input-arrow)"/><path class="factory-arrow" d="M90 132 H186" stroke="#2C9BC9" stroke-width="5" fill="none" marker-end="url(#product-water-arrow)"/><path class="factory-arrow" d="M93 194 L187 184" stroke="#6F7D8A" stroke-width="5" fill="none" marker-end="url(#product-carbon-arrow)"/><ellipse cx="255" cy="157" rx="72" ry="52" fill="#75C969" stroke="#347841" stroke-width="6"/><ellipse cx="255" cy="157" rx="43" ry="28" fill="#4EA34E"/><text x="255" y="163" text-anchor="middle" fill="#fff" font-size="18" font-weight="900">Chloroplast</text><path d="M307 122" H442" stroke="#E96650" stroke-width="5" fill="none" marker-end="url(#product-output-arrow)"/><path d="M307 194 H442" stroke="#5AAFE0" stroke-width="5" fill="none" marker-end="url(#product-oxygen-arrow)"/><g class="product-output"><circle cx="316" cy="122" r="17" fill="#F7A84D"/><text x="316" y="128" text-anchor="middle" fill="#fff" font-size="12" font-weight="800">Nutrients</text><circle cx="316" cy="194" r="17" fill="#75C8EF"/><text x="316" y="200" text-anchor="middle" fill="#fff" font-size="12" font-weight="800">O₂</text></g><rect x="67" y="235" width="366" height="34" rx="17" fill="#FFF8D9" stroke="#E2B547" stroke-width="2"/><text x="250" y="257" text-anchor="middle" fill="#5D6A37" font-size="16" font-weight="900">Sunlight + Water + CO₂ → Nutrients + O₂</text>`;
+
+      if (product) {
+        const circles = product.querySelectorAll('circle');
+        const labels = [...product.querySelectorAll('text')];
+        circles[1]?.setAttribute('cy', '148');
+        circles[2]?.setAttribute('cy', '202');
+        labels.find(label => label.textContent === 'Water')?.setAttribute('y', '153');
+        labels.find(label => label.textContent === 'CO₂')?.setAttribute('y', '207');
+        product.querySelectorAll('.factory-arrow')[1]?.setAttribute('d', 'M90 148 H186');
+        product.querySelectorAll('.factory-arrow')[2]?.setAttribute('d', 'M93 200 L187 184');
+      }
+
+      const finalScene = page.querySelector('svg[aria-label="Little Green growing healthy after completing the lesson"]');
+      if (finalScene) {
+        finalScene.querySelector('text')?.remove();
+        finalScene.parentElement.querySelector('.scene-caption')?.classList.add('final-caption');
+      }
+    }
+
+    function setupPhotosynthesisInteractions(page) {
+      refinePhotosynthesisDiagrams(page);
+      page.querySelectorAll('text').forEach(label => {
+        if (label.textContent === 'Materials enter from the left') label.textContent = 'Water + CO₂';
+      });
+      page.querySelectorAll('[data-lesson-read]').forEach(button => button.addEventListener('click', () => speakReply(button.dataset.lessonRead)));
+      page.querySelectorAll('[data-lesson-stop]').forEach(button => button.addEventListener('click', () => {
+        if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      }));
+
+      page.querySelectorAll('[data-quiz]').forEach(quiz => {
+        const quizId = quiz.dataset.quiz;
+        quiz.querySelectorAll('[data-quiz-choice]').forEach(choice => choice.addEventListener('click', () => {
+          const details = lessonQuizDetails[quizId];
+          const feedback = quiz.querySelector('.quiz-feedback');
+          if (choice.dataset.quizChoice === details.correct) {
+            quiz.querySelectorAll('[data-quiz-choice]').forEach(item => {
+              item.disabled = true;
+              if (item.dataset.quizChoice === details.correct) item.classList.add('correct');
+            });
+            feedback.className = 'quiz-feedback correct';
+            feedback.textContent = details.success;
+            completedLessonQuizzes.add(quizId);
+            updateLessonScore();
+          } else {
+            choice.classList.add('incorrect');
+            feedback.className = 'quiz-feedback incorrect';
+            feedback.textContent = details.retry;
+          }
+        }));
+      });
+
+      document.getElementById('lesson-check-environment').addEventListener('click', checkLessonEnvironment);
+      document.getElementById('lesson-restart').addEventListener('click', () => {
+        if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+        completedLessonQuizzes = new Set();
+        renderPhotosynthesisClassroom();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+
+      const observer = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+          const section = entry.target;
+          const scene = section.querySelector('.lesson-scene');
+          if (scene) scene.classList.toggle('active-scene', entry.isIntersecting);
+          if (entry.isIntersecting && entry.intersectionRatio > .45) updateLessonProgress(Number(section.dataset.lessonSection));
+        });
+      }, { threshold: [.45, .65] });
+      page.querySelectorAll('[data-lesson-section]').forEach(section => observer.observe(section));
+      updateLessonProgress(1);
+    }
+
+    function updateLessonProgress(section) {
+      const labels = ['What Does Little Green Need?', 'Chloroplast Factory', 'Water Transport Upward', 'Gas Exchange', 'Making Nutrients', 'Summary & Challenge'];
+      const label = document.getElementById('lesson-progress-label');
+      const fill = document.getElementById('lesson-progress-fill');
+      if (!label || !fill) return;
+      label.textContent = `Section ${section}: ${labels[section - 1]}`;
+      fill.style.width = `${((section - 1) / 5) * 100}%`;
+    }
+
+    function updateLessonScore() {
+      const score = document.getElementById('lesson-score');
+      if (score) score.textContent = `${completedLessonQuizzes.size} / 5 Completed`;
+      const badge = document.getElementById('lesson-badge');
+      if (badge && completedLessonQuizzes.size === 5) badge.classList.add('visible');
+    }
+
+    function updateLessonSensorChallenge() {
+      const temp = document.getElementById('lesson-sensor-temp');
+      const hum = document.getElementById('lesson-sensor-hum');
+      if (!temp || !hum || typeof sensorData === 'undefined') return;
+      temp.textContent = `${sensorData.temp.toFixed(1)}°C`;
+      hum.textContent = `${sensorData.hum.toFixed(1)}%`;
+    }
+
+    function checkLessonEnvironment() {
+      const result = document.getElementById('lesson-environment-result');
+      if (!result || typeof sensorData === 'undefined') return;
+      const tempMessage = sensorData.temp < 18 ? 'Temperature is low, Little Green might feel cold.' : sensorData.temp > 28 ? 'Temperature is high, pay attention to ventilation and water.' : 'Temperature is comfortable.';
+      const humMessage = sensorData.hum < 40 ? 'Humidity is low, soil may be drier.' : sensorData.hum > 75 ? 'Humidity is high, remember to keep air circulating.' : 'Humidity is just right.';
+      result.className = 'quiz-feedback correct';
+      result.textContent = `${tempMessage}${humMessage} Remember: In addition to a suitable environment, photosynthesis still requires sunlight, water, and carbon dioxide.`;
+    }
+
+    renderPhotosynthesisClassroom();
+  </script>
+</body>
+</html>
