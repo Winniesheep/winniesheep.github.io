@@ -503,8 +503,8 @@
     }
 
     function buildAiMessages(message, sensor, audioBase64, audioFormat) {
-      const systemContent = 'You are Little Green, a friendly and lively plant learning assistant suitable for primary school students. Please answer in English with a warm tone. Keep answers short, clear, complete, and encourage students to observe data. Too hot >28 degrees , too low <18 degrees, too dry <40% humidity, too wet >80% humidity. If the environment is not suitable for plant growth, please give a short warning and advice.';
-      const sensorContext = `\nCurrent environment data: Temperature ${sensor.temp.toFixed(1)} degrees, Humidity ${Math.round(sensor.hum)}%. Please answer combining plant growth and photosynthesis knowledge.`;
+      const systemContent = 'あなたは緑ちゃん、小学生にやさしい植物の学習アシスタントです。日本語で丁寧で明るい口調で回答してください。答えは短く分かりやすく、データを見て観察するように促してください。温度が高すぎる場合は28度以上、低すぎる場合は18度未満、乾燥しすぎている場合は湿度40%未満、湿りすぎている場合は80%以上です。植物の生育に適さない環境の場合は、短い警告とアドバイスをお願いします。';
+      const sensorContext = `\n現在の環境データ：温度${sensor.temp.toFixed(1)}度、湿度${Math.round(sensor.hum)}%。植物の成長と光合成の知識を踏まえて回答してください。`;
 
       if (audioBase64) {
         return [
@@ -1063,7 +1063,7 @@
 
       window.speechSynthesis.cancel();
       const u = new SpeechSynthesisUtterance(reply);
-      u.lang = 'en-US';
+      u.lang = 'ja-JP';
       u.rate = 1.0;
       u.pitch = 1.05;
       u.onend = finish;
